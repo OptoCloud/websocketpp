@@ -108,7 +108,7 @@ struct stub_con : public iostream_con {
         );
     }
 
-    void handle_op(websocketpp::lib::error_code const & e) {
+    void handle_op(websocketpp::const lib::error_code& e) {
         ec = e;
     }
 
@@ -135,7 +135,7 @@ struct stub_con : public iostream_con {
         );
     }
 
-    void handle_indef(websocketpp::lib::error_code const & e, size_t amt_read) {
+    void handle_indef(websocketpp::const lib::error_code& e, size_t amt_read) {
         ec = e;
         indef_read_total += amt_read;
 
@@ -152,7 +152,7 @@ struct stub_con : public iostream_con {
         );
     }
 
-    void handle_async_shutdown(websocketpp::lib::error_code const & e) {
+    void handle_async_shutdown(websocketpp::const lib::error_code& e) {
         ec = e;
     }
 
@@ -467,7 +467,7 @@ BOOST_AUTO_TEST_CASE( async_read_at_least2 ) {
     BOOST_CHECK_EQUAL( std::string(buf,10), "abcdefgxxx" );
 }
 
-void timer_callback_stub(websocketpp::lib::error_code const &) {}
+void timer_callback_stub(websocketpp::const lib::error_code&) {}
 
 BOOST_AUTO_TEST_CASE( set_timer ) {
    stub_con::ptr con(new stub_con(true,alogger,elogger));

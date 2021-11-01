@@ -36,6 +36,7 @@
 #include <websocketpp/common/system_error.hpp>
 
 #include <string>
+#include <string_view>
 
 namespace websocketpp {
 namespace processor {
@@ -43,9 +44,9 @@ namespace processor {
 /// Constants related to processing WebSocket connections
 namespace constants {
 
-static char const upgrade_token[] = "websocket";
-static char const connection_token[] = "Upgrade";
-static char const handshake_guid[] = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+static std::string_view upgrade_token = "websocket";
+static std::string_view connection_token = "Upgrade";
+static std::string_view handshake_guid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
 } // namespace constants
 
@@ -235,7 +236,7 @@ public:
 };
 
 /// Get a reference to a static copy of the processor error category
-inline lib::error_category const & get_processor_category() {
+inline const lib::error_category& get_processor_category() {
     static processor_category instance;
     return instance;
 }

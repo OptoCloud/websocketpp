@@ -553,7 +553,7 @@ public:
      * descriptive name or a numeric string corresponding to a port number.
      * @param ec Set to indicate what error occurred, if any.
      */
-    void listen(std::string const & host, std::string const & service,
+    void listen(const std::string& host, const std::string& service,
         lib::error_code & ec)
     {
         using lib::asio::ip::tcp;
@@ -586,7 +586,7 @@ public:
      * descriptive name or a numeric string corresponding to a port number.
      * @param ec Set to indicate what error occurred, if any.
      */
-    void listen(std::string const & host, std::string const & service)
+    void listen(const std::string& host, const std::string& service)
     {
         lib::error_code ec;
         listen(host,service,ec);
@@ -743,7 +743,7 @@ public:
      * @param ec A status code indicating an error, if any.
      */
     void handle_timer(timer_ptr, timer_handler callback,
-        lib::asio::error_code const & ec)
+        const lib::asio::error_code& ec)
     {
         if (ec) {
             if (ec == lib::asio::error::operation_aborted) {
@@ -825,7 +825,7 @@ protected:
         m_elog = e;
     }
 
-    void handle_accept(accept_handler callback, lib::asio::error_code const & 
+    void handle_accept(accept_handler callback, const lib::asio::error_code& 
         asio_ec)
     {
         lib::error_code ret_ec;
@@ -942,7 +942,7 @@ protected:
      * @param ec A status code indicating an error, if any.
      */
     void handle_resolve_timeout(timer_ptr, connect_handler callback,
-        lib::error_code const & ec)
+        const lib::error_code& ec)
     {
         lib::error_code ret_ec;
 
@@ -965,7 +965,7 @@ protected:
     }
 
     void handle_resolve(transport_con_ptr tcon, timer_ptr dns_timer,
-        connect_handler callback, lib::asio::error_code const & ec,
+        connect_handler callback, const lib::asio::error_code& ec,
         lib::asio::ip::tcp::resolver::iterator iterator)
     {
         if (ec == lib::asio::error::operation_aborted ||
@@ -1051,7 +1051,7 @@ protected:
      * @param ec A status code indicating an error, if any.
      */
     void handle_connect_timeout(transport_con_ptr tcon, timer_ptr,
-        connect_handler callback, lib::error_code const & ec)
+        connect_handler callback, const lib::error_code& ec)
     {
         lib::error_code ret_ec;
 
@@ -1074,7 +1074,7 @@ protected:
     }
 
     void handle_connect(transport_con_ptr tcon, timer_ptr con_timer,
-        connect_handler callback, lib::asio::error_code const & ec)
+        connect_handler callback, const lib::asio::error_code& ec)
     {
         if (ec == lib::asio::error::operation_aborted ||
             lib::asio::is_neg(con_timer->expires_from_now()))

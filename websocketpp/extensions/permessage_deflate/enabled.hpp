@@ -77,7 +77,7 @@ namespace extensions {
  * Negotiate the parameters of extension use
  *
  * **compress**\n
- * `lib::error_code compress(std::string const & in, std::string & out)`\n
+ * `lib::error_code compress(const std::string& in, std::string & out)`\n
  * Compress the bytes in `in` and append them to `out`
  *
  * **decompress**\n
@@ -120,36 +120,38 @@ class category : public lib::error_category {
 public:
     category() {}
 
-    char const * name() const _WEBSOCKETPP_NOEXCEPT_TOKEN_ {
-        return "websocketpp.extension.permessage-deflate";
+    std::string_view name() const _WEBSOCKETPP_NOEXCEPT_TOKEN_ {
+        using namespace std::literals;
+        return "websocketpp.extension.permessage-deflate"sv;
     }
 
-    std::string message(int value) const {
+    std::string_view message(int value) const {
+        using namespace std::literals;
         switch(value) {
             case general:
-                return "Generic permessage-compress error";
+                return "Generic permessage-compress error"sv;
             case invalid_attributes:
-                return "Invalid extension attributes";
+                return "Invalid extension attributes"sv;
             case invalid_attribute_value:
-                return "Invalid extension attribute value";
+                return "Invalid extension attribute value"sv;
             case invalid_mode:
-                return "Invalid permessage-deflate negotiation mode";
+                return "Invalid permessage-deflate negotiation mode"sv;
             case unsupported_attributes:
-                return "Unsupported extension attributes";
+                return "Unsupported extension attributes"sv;
             case invalid_max_window_bits:
-                return "Invalid value for max_window_bits";
+                return "Invalid value for max_window_bits"sv;
             case zlib_error:
-                return "A zlib function returned an error";
+                return "A zlib function returned an error"sv;
             case uninitialized:
-                return "Deflate extension must be initialized before use";
+                return "Deflate extension must be initialized before use"sv;
             default:
-                return "Unknown permessage-compress error";
+                return "Unknown permessage-compress error"sv;
         }
     }
 };
 
 /// Get a reference to a static copy of the permessage-deflate error category
-inline lib::error_category const & get_category() {
+inline const lib::error_category& get_category() {
     static category instance;
     return instance;
 }
@@ -482,7 +484,7 @@ public:
      */
     std::string generate_offer() const {
         // TODO: this should be dynamically generated based on user settings
-        return "permessage-deflate; client_no_context_takeover; client_max_window_bits";
+        return "permessage-deflate; client_no_context_takeover; client_max_window_bits"sv;
     }
 
     /// Validate extension response
@@ -545,7 +547,7 @@ public:
      * @param [out] out String to append compressed bytes to
      * @return Error or status code
      */
-    lib::error_code compress(std::string const & in, std::string & out) {
+    lib::error_code compress(const std::string& in, std::string & out) {
         if (!m_initialized) {
             return make_error_code(error::uninitialized);
         }
@@ -619,26 +621,26 @@ private:
      * @return Generate extension negotiation reponse string to send to client
      */
     std::string generate_response() {
-        std::string ret = "permessage-deflate";
+        std::string ret = "permessage-deflate"sv;
 
         if (m_server_no_context_takeover) {
-            ret += "; server_no_context_takeover";
+            ret += "sv; server_no_context_takeover"sv;
         }
 
         if (m_client_no_context_takeover) {
-            ret += "; client_no_context_takeover";
+            ret += "sv; client_no_context_takeover"sv;
         }
 
         if (m_server_max_window_bits < default_server_max_window_bits) {
             std::stringstream s;
             s << int(m_server_max_window_bits);
-            ret += "; server_max_window_bits="+s.str();
+            ret += "sv; server_max_window_bits="+s.str();
         }
 
         if (m_client_max_window_bits < default_client_max_window_bits) {
             std::stringstream s;
             s << int(m_client_max_window_bits);
-            ret += "; client_max_window_bits="+s.str();
+            ret += "sv; client_max_window_bits="+s.str();
         }
 
         return ret;
@@ -649,7 +651,7 @@ private:
      * @param [in] value The value of the attribute from the offer
      * @param [out] ec A reference to the error code to return errors via
      */
-    void negotiate_server_no_context_takeover(std::string const & value,
+    void negotiate_server_no_context_takeover(const std::string& value,
         lib::error_code & ec)
     {
         if (!value.empty()) {
@@ -665,7 +667,7 @@ private:
      * @param [in] value The value of the attribute from the offer
      * @param [out] ec A reference to the error code to return errors via
      */
-    void negotiate_client_no_context_takeover(std::string const & value,
+    void negotiate_client_no_context_takeover(const std::string& value,
         lib::error_code & ec)
     {
         if (!value.empty()) {
@@ -698,7 +700,7 @@ private:
      * @param [in] value The value of the attribute from the offer
      * @param [out] ec A reference to the error code to return errors via
      */
-    void negotiate_server_max_window_bits(std::string const & value,
+    void negotiate_server_max_window_bits(const std::string& value,
         lib::error_code & ec)
     {
         uint8_t bits = uint8_t(atoi(value.c_str()));
@@ -754,7 +756,7 @@ private:
      * @param [in] value The value of the attribute from the offer
      * @param [out] ec A reference to the error code to return errors via
      */
-    void negotiate_client_max_window_bits(std::string const & value,
+    void negotiate_client_max_window_bits(const std::string& value,
             lib::error_code & ec)
     {
         uint8_t bits = uint8_t(atoi(value.c_str()));

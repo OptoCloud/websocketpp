@@ -32,6 +32,7 @@
 #include <istream>
 #include <sstream>
 #include <string>
+#include <charconv>
 
 #include <websocketpp/http/parser.hpp>
 
@@ -59,11 +60,11 @@ inline size_t response::consume(char const * buf, size_t len) {
         end = std::search(
             begin,
             m_buf->end(),
-            header_delimiter,
-            header_delimiter + sizeof(header_delimiter) - 1
+            header_delimiter.begin(),
+            header_delimiter.end()
         );
 
-        m_header_bytes += (end-begin+sizeof(header_delimiter));
+        m_header_bytes += (end - begin + header_delimiter.size() + 1);
         
         if (m_header_bytes > max_header_size) {
             // exceeded max header size
@@ -92,17 +93,16 @@ inline size_t response::consume(char const * buf, size_t len) {
             }
 
             // TODO: grab content-length
-            std::string length = get_header("Content-Length");
+            std::string_view length = get_header("Content-Length");
 
             if (length.empty()) {
                 // no content length found, read indefinitely
                 m_read = 0;
             } else {
-                std::istringstream ss(length);
+                std::from_chars_result result = std::from_chars(length.data(), length.data() + length.size(), m_read);
 
-                if ((ss >> m_read).fail()) {
-                    throw exception("Unable to parse Content-Length header",
-                                    status_code::bad_request);
+                if (result.ec == std::errc::invalid_argument || result.ec == std::errc::result_out_of_range) {
+                    throw exception("Unable to parse Content-Length header", status_code::bad_request);
                 }
             }
 
@@ -111,7 +111,7 @@ inline size_t response::consume(char const * buf, size_t len) {
             // calc header bytes processed (starting bytes - bytes left)
             size_t read = (
                 len - static_cast<std::string::size_type>(m_buf->end() - end)
-                + sizeof(header_delimiter) - 1
+                + header_delimiter.size()
             );
 
             // if there were bytes left process them as body bytes
@@ -132,7 +132,7 @@ inline size_t response::consume(char const * buf, size_t len) {
             }
         }
 
-        begin = end+(sizeof(header_delimiter) - 1);
+        begin = end + header_delimiter.size();
     }
 }
 
@@ -175,17 +175,31 @@ inline size_t response::consume(std::istream & s) {
     return total;
 }
 
-inline std::string response::raw() const {
+inline std::vector<std::uint8_t> response::raw() const {
     // TODO: validation. Make sure all required fields have been set?
 
-    std::stringstream ret;
+    std::string_view version = get_version();
+    std::string status_code = std::to_string(m_status_code);
+    std::string headers = raw_headers();
 
-    ret << get_version() << " " << m_status_code << " " << m_status_msg;
-    ret << "\r\n" << raw_headers() << "\r\n";
+    std::vector<std::uint8_t> ret;
+    ret.reserve(
+                version.size() + 1 + status_code.size() + 1 + m_status_msg.size() + 2 +
+                headers.size() + 2 +
+                m_body.size()
+                );
 
-    ret << m_body;
+    ret.insert(ret.end(), version.begin(), version.end());
+    ret.insert(ret.end(), { ' ' });
+    ret.insert(ret.end(), status_code.begin(), status_code.end());
+    ret.insert(ret.end(), { ' ' });
+    ret.insert(ret.end(), m_status_msg.begin(), m_status_msg.end());
+    ret.insert(ret.end(), { '\r', '\n' });
+    ret.insert(ret.end(), headers.begin(), headers.end());
+    ret.insert(ret.end(), { '\r', '\n' });
+    ret.insert(ret.end(), m_body.begin(), m_body.end());
 
-    return ret.str();
+    return ret;
 }
 
 inline void response::set_status(status_code::value code) {
@@ -194,12 +208,11 @@ inline void response::set_status(status_code::value code) {
     m_status_msg = get_string(code);
 }
 
-inline void response::set_status(status_code::value code, std::string const &
-    msg)
+inline void response::set_status(status_code::value code, std::string_view msg)
 {
     // TODO: validation?
     m_status_code = code;
-    m_status_msg = msg;
+    m_status_msg.assign(msg.begin(), msg.end());
 }
 
 inline void response::process(std::string::iterator begin,
@@ -232,7 +245,7 @@ inline void response::process(std::string::iterator begin,
     set_status(status_code::value(code),std::string(cursor_end+1,end));
 }
 
-inline size_t response::process_body(char const * buf, size_t len) {
+inline size_t response::process_body(const char* buf, size_t len) {
     // If no content length was set then we read forever and never set m_ready
     if (m_read == 0) {
         //m_body.append(buf,len);
@@ -254,7 +267,7 @@ inline size_t response::process_body(char const * buf, size_t len) {
         to_read = len;
     }
 
-    m_body.append(buf,to_read);
+    m_body.insert(m_body.end(), buf , buf + to_read);
     m_read -= to_read;
     return to_read;
 }

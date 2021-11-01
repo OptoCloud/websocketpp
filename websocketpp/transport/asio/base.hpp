@@ -142,13 +142,13 @@ inline custom_alloc_handler<Handler> make_custom_alloc_handler(
 template <typename config>
 class endpoint;
 
-typedef lib::function<void (lib::asio::error_code const & ec,
+typedef lib::function<void (const lib::asio::error_code& ec,
     size_t bytes_transferred)> async_read_handler;
 
-typedef lib::function<void (lib::asio::error_code const & ec,
+typedef lib::function<void (const lib::asio::error_code& ec,
     size_t bytes_transferred)> async_write_handler;
 
-typedef lib::function<void (lib::error_code const & ec)> pre_init_handler;
+typedef lib::function<void (const lib::error_code& ec)> pre_init_handler;
 
 // handle_timer: dynamic parameters, multiple copies
 // handle_proxy_write
@@ -208,7 +208,7 @@ public:
 };
 
 /// Get a reference to a static copy of the asio transport error category
-inline lib::error_category const & get_category() {
+inline const lib::error_category& get_category() {
     static category instance;
     return instance;
 }

@@ -28,7 +28,7 @@ public:
     }
 
     void on_message(connection_hdl hdl, server::message_ptr msg) {
-        for (auto it : m_connections) {
+        for (auto connection : m_connections) {
             m_server.send(it,msg);
         }
     }

@@ -35,6 +35,7 @@
 #include <websocketpp/utilities.hpp>
 #include <websocketpp/uri.hpp>
 
+#include <charconv>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -68,18 +69,16 @@ template <typename request_type>
 bool is_websocket_handshake(request_type& r) {
     using utility::ci_find_substr;
 
-    std::string const & upgrade_header = r.get_header("Upgrade");
+    std::string_view upgrade_header = r.get_header("Upgrade");
 
-    if (ci_find_substr(upgrade_header, constants::upgrade_token,
-        sizeof(constants::upgrade_token)-1) == upgrade_header.end())
+    if (ci_find_substr(upgrade_header, constants::upgrade_token.data(), constants::upgrade_token.size()) == upgrade_header.end())
     {
         return false;
     }
 
-    std::string const & con_header = r.get_header("Connection");
+    std::string_view con_header = r.get_header("Connection");
 
-    if (ci_find_substr(con_header, constants::connection_token,
-        sizeof(constants::connection_token)-1) == con_header.end())
+    if (ci_find_substr(con_header, constants::connection_token.data(), constants::connection_token.size()) == con_header.end())
     {
         return false;
     }
@@ -114,9 +113,10 @@ int get_websocket_version(request_type& r) {
     }
 
     int version;
-    std::istringstream ss(r.get_header("Sec-WebSocket-Version"));
+    std::string_view header = r.get_header("Sec-WebSocket-Version");
+    auto result = std::from_chars(header.begin(), header.end(), version);
 
-    if ((ss >> version).fail()) {
+    if (result.ec == std::errc::invalid_argument || result.ec == std::errc::result_out_of_range) {
         return -1;
     }
 
@@ -134,7 +134,7 @@ int get_websocket_version(request_type& r) {
  */
 template <typename request_type>
 uri_ptr get_uri_from_host(request_type & request, std::string scheme) {
-    std::string h = request.get_header("Host");
+    std::string_view h = request.get_header("Host");
 
     size_t last_colon = h.rfind(":");
     size_t last_sbrace = h.rfind("]");
@@ -222,7 +222,7 @@ public:
      *
      * @param request The request or response headers to look at.
      */
-    virtual err_str_pair negotiate_extensions(request_type const &) {
+    virtual err_str_pair negotiate_extensions(const request_type&) {
         return err_str_pair();
     }
     
@@ -236,7 +236,7 @@ public:
      *
      * @param response The request or response headers to look at.
      */
-    virtual err_str_pair negotiate_extensions(response_type const &) {
+    virtual err_str_pair negotiate_extensions(const response_type&) {
         return err_str_pair();
     }
 
@@ -249,7 +249,7 @@ public:
      * @return A status code, 0 on success, non-zero for specific sorts of
      * failure
      */
-    virtual lib::error_code validate_handshake(request_type const & request) const = 0;
+    virtual lib::error_code validate_handshake(const request_type& request) const = 0;
 
     /// Calculate the appropriate response for this websocket request
     /**
@@ -261,8 +261,7 @@ public:
      *
      * @return An error code, 0 on success, non-zero for other errors
      */
-    virtual lib::error_code process_handshake(request_type const & req,
-        std::string const & subprotocol, response_type& res) const = 0;
+    virtual lib::error_code process_handshake(const request_type& req, const std::string& subprotocol, response_type& res) const = 0;
 
     /// Fill in an HTTP request for an outgoing connection handshake
     /**
@@ -270,8 +269,7 @@ public:
      *
      * @return An error code, 0 on success, non-zero for other errors
      */
-    virtual lib::error_code client_handshake_request(request_type & req,
-        uri_ptr uri, std::vector<std::string> const & subprotocols) const = 0;
+    virtual lib::error_code client_handshake_request(request_type & req, uri_ptr uri, std::span<const std::string> subprotocols) const = 0;
 
     /// Validate the server's response to an outgoing handshake request
     /**
@@ -280,13 +278,13 @@ public:
      * @return An error code, 0 on success, non-zero for other errors
      */
     virtual lib::error_code validate_server_handshake_response(request_type
-        const & req, response_type & res) const = 0;
+        const & req, response_type& res) const = 0;
 
     /// Given a completed response, get the raw bytes to put on the wire
-    virtual std::string get_raw(response_type const & request) const = 0;
+    virtual std::vector<std::uint8_t> get_raw(const response_type& request) const = 0;
 
     /// Return the value of the header containing the CORS origin.
-    virtual std::string const & get_origin(request_type const & request) const = 0;
+    virtual std::string_view get_origin(const request_type& request) const = 0;
 
     /// Extracts requested subprotocols from a handshake request
     /**
@@ -297,11 +295,11 @@ public:
      * @param [out] subprotocol_list A reference to a vector of strings to store
      * the results in.
      */
-    virtual lib::error_code extract_subprotocols(const request_type & req,
+    virtual lib::error_code extract_subprotocols(const request_type& req,
         std::vector<std::string> & subprotocol_list) = 0;
 
     /// Extracts client uri from a handshake request
-    virtual uri_ptr get_uri(request_type const & request) const = 0;
+    virtual uri_ptr get_uri(const request_type& request) const = 0;
 
     /// process new websocket connection bytes
     /**
@@ -366,7 +364,7 @@ public:
      * @param out The message buffer to prepare the ping in.
      * @return Status code, zero on success, non-zero on failure
      */
-    virtual lib::error_code prepare_ping(std::string const & in, message_ptr out) const 
+    virtual lib::error_code prepare_ping(std::span<const std::uint8_t> in, message_ptr out) const
         = 0;
 
     /// Prepare a pong frame
@@ -378,7 +376,7 @@ public:
      * @param out The message buffer to prepare the pong in.
      * @return Status code, zero on success, non-zero on failure
      */
-    virtual lib::error_code prepare_pong(std::string const & in, message_ptr out) const 
+    virtual lib::error_code prepare_pong(std::span<const std::uint8_t> in, message_ptr out) const
         = 0;
 
     /// Prepare a close frame
@@ -394,7 +392,7 @@ public:
      * @return Status code, zero on success, non-zero on failure
      */
     virtual lib::error_code prepare_close(close::status::value code,
-        std::string const & reason, message_ptr out) const = 0;
+        std::string_view reason, message_ptr out) const = 0;
 protected:
     bool const m_secure;
     bool const m_server;

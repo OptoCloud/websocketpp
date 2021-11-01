@@ -88,22 +88,23 @@ struct elevel {
      *
      * @return The name of the specified channel.
      */
-    static char const * channel_name(level channel) {
+    static std::string_view channel_name(level channel) {
+        using namespace std::literals;
         switch(channel) {
             case devel:
-                return "devel";
+                return "devel"sv;
             case library:
-                return "library";
+                return "library"sv;
             case info:
-                return "info";
+                return "info"sv;
             case warn:
-                return "warning";
+                return "warning"sv;
             case rerror:
-                return "error";
+                return "error"sv;
             case fatal:
-                return "fatal";
+                return "fatal"sv;
             default:
-                return "unknown";
+                return "unknown"sv;
         }
     }
 };
@@ -161,38 +162,39 @@ struct alevel {
      *
      * @return The name of the specified channel.
      */
-    static char const * channel_name(level channel) {
+    static std::string_view channel_name(level channel) {
+        using namespace std::literals;
         switch(channel) {
             case connect:
-                return "connect";
+                return "connect"sv;
             case disconnect:
-                return "disconnect";
+                return "disconnect"sv;
             case control:
-                return "control";
+                return "control"sv;
             case frame_header:
-                return "frame_header";
+                return "frame_header"sv;
             case frame_payload:
-                return "frame_payload";
+                return "frame_payload"sv;
             case message_header:
-                return "message_header";
+                return "message_header"sv;
             case message_payload:
-                return "message_payload";
+                return "message_payload"sv;
             case endpoint:
-                return "endpoint";
+                return "endpoint"sv;
             case debug_handshake:
-                return "debug_handshake";
+                return "debug_handshake"sv;
             case debug_close:
-                return "debug_close";
+                return "debug_close"sv;
             case devel:
-                return "devel";
+                return "devel"sv;
             case app:
-                return "application";
+                return "application"sv;
             case http:
-                return "http";
+                return "http"sv;
             case fail:
-                return "fail";
+                return "fail"sv;
             default:
-                return "unknown";
+                return "unknown"sv;
         }
     }
 };

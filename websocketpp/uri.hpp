@@ -33,6 +33,7 @@
 #include <websocketpp/common/memory.hpp>
 #include <websocketpp/common/stdint.hpp>
 
+#include <charconv>
 #include <algorithm>
 #include <sstream>
 #include <string>
@@ -48,11 +49,11 @@ static uint16_t const uri_default_secure_port = 443;
 
 class uri {
 public:
-    explicit uri(std::string const & uri_string) : m_valid(false) {
-        std::string::const_iterator it;
-        std::string::const_iterator temp;
-
+    explicit uri(std::string_view uri_string) : m_valid(false) {
         int state = 0;
+
+        std::string_view::const_iterator it;
+        std::string_view::const_iterator temp;
 
         it = uri_string.begin();
         size_t uri_len = uri_string.length();
@@ -167,8 +168,7 @@ public:
         m_valid = true;
     }
 
-    uri(bool secure, std::string const & host, uint16_t port,
-        std::string const & resource)
+    uri(bool secure, std::string_view host, uint16_t port, std::string_view resource)
       : m_scheme(secure ? "wss" : "ws")
       , m_host(host)
       , m_resource(resource.empty() ? "/" : resource)
@@ -176,7 +176,7 @@ public:
       , m_secure(secure)
       , m_valid(true) {}
 
-    uri(bool secure, std::string const & host, std::string const & resource)
+    uri(bool secure, std::string_view host, std::string_view resource)
       : m_scheme(secure ? "wss" : "ws")
       , m_host(host)
       , m_resource(resource.empty() ? "/" : resource)
@@ -184,8 +184,7 @@ public:
       , m_secure(secure)
       , m_valid(true) {}
 
-    uri(bool secure, std::string const & host, std::string const & port,
-        std::string const & resource)
+    uri(bool secure, std::string_view host, std::string_view port, std::string_view resource)
       : m_scheme(secure ? "wss" : "ws")
       , m_host(host)
       , m_resource(resource.empty() ? "/" : resource)
@@ -196,8 +195,7 @@ public:
         m_valid = !ec;
     }
 
-    uri(std::string const & scheme, std::string const & host, uint16_t port,
-        std::string const & resource)
+    uri(std::string_view scheme, std::string_view host, uint16_t port, std::string_view resource)
       : m_scheme(scheme)
       , m_host(host)
       , m_resource(resource.empty() ? "/" : resource)
@@ -205,7 +203,7 @@ public:
       , m_secure(scheme == "wss" || scheme == "https")
       , m_valid(true) {}
 
-    uri(std::string scheme, std::string const & host, std::string const & resource)
+    uri(std::string scheme, std::string_view host, std::string_view resource)
       : m_scheme(scheme)
       , m_host(host)
       , m_resource(resource.empty() ? "/" : resource)
@@ -213,8 +211,7 @@ public:
       , m_secure(scheme == "wss" || scheme == "https")
       , m_valid(true) {}
 
-    uri(std::string const & scheme, std::string const & host,
-        std::string const & port, std::string const & resource)
+    uri(std::string_view scheme, std::string_view host, std::string_view port, std::string_view resource)
       : m_scheme(scheme)
       , m_host(host)
       , m_resource(resource.empty() ? "/" : resource)
@@ -233,11 +230,11 @@ public:
         return m_secure;
     }
 
-    std::string const & get_scheme() const {
+    std::string_view get_scheme() const {
         return m_scheme;
     }
 
-    std::string const & get_host() const {
+    std::string_view get_host() const {
         return m_host;
     }
 
@@ -267,7 +264,7 @@ public:
         return p.str();
     }
 
-    std::string const & get_resource() const {
+    std::string_view get_resource() const {
         return m_resource;
     }
 
@@ -318,8 +315,7 @@ public:
     void set_port(const std::string& port);
     void set_resource(const std::string& resource);*/
 private:
-    uint16_t get_port_from_string(std::string const & port, lib::error_code &
-        ec) const
+    uint16_t get_port_from_string(std::string_view port, lib::error_code& ec) const
     {
         ec = lib::error_code();
 
@@ -327,17 +323,14 @@ private:
             return (m_secure ? uri_default_secure_port : uri_default_port);
         }
 
-        unsigned int t_port = static_cast<unsigned int>(atoi(port.c_str()));
+        std::uint16_t t_port;
+        std::from_chars_result result = std::from_chars(port.data(), port.data() + port.size(), t_port);
 
-        if (t_port > 65535) {
+        if (result.ec == std::errc::invalid_argument || result.ec == std::errc::result_out_of_range || t_port == 0) {
             ec = error::make_error_code(error::invalid_port);
         }
 
-        if (t_port == 0) {
-            ec = error::make_error_code(error::invalid_port);
-        }
-
-        return static_cast<uint16_t>(t_port);
+        return t_port;
     }
 
     std::string m_scheme;

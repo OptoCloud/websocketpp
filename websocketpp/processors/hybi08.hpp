@@ -71,7 +71,7 @@ public:
         return 8;
     }
 
-    std::string const & get_origin(request_type const & r) const {
+    std::string_view get_origin(const request_type& r) const {
         return r.get_header("Sec-WebSocket-Origin");
     }
 private:

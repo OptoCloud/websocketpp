@@ -45,6 +45,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <span>
 
 namespace websocketpp {
 
@@ -98,7 +99,7 @@ typedef lib::function<void(connection_hdl)> interrupt_handler;
  * true if a pong response should be sent, false if the pong response should be
  * suppressed.
  */
-typedef lib::function<bool(connection_hdl,std::string)> ping_handler;
+typedef lib::function<bool(connection_hdl,std::span<const std::uint8_t>)> ping_handler;
 
 /// The type and function signature of a pong handler
 /**
@@ -106,14 +107,14 @@ typedef lib::function<bool(connection_hdl,std::string)> ping_handler;
  * control frame. The string argument contains the pong payload. The payload is
  * a binary string up to 126 bytes in length.
  */
-typedef lib::function<void(connection_hdl,std::string)> pong_handler;
+typedef lib::function<void(connection_hdl,std::span<const std::uint8_t>)> pong_handler;
 
 /// The type and function signature of a pong timeout handler
 /**
  * The pong timeout handler is called when a ping goes unanswered by a pong for
  * longer than the locally specified timeout period.
  */
-typedef lib::function<void(connection_hdl,std::string)> pong_timeout_handler;
+typedef lib::function<void(connection_hdl,std::span<const std::uint8_t>)> pong_timeout_handler;
 
 /// The type and function signature of a validate handler
 /**
@@ -151,8 +152,8 @@ typedef lib::function<bool(connection_hdl)> validate_handler;
 typedef lib::function<void(connection_hdl)> http_handler;
 
 //
-typedef lib::function<void(lib::error_code const & ec, size_t bytes_transferred)> read_handler;
-typedef lib::function<void(lib::error_code const & ec)> write_frame_handler;
+typedef lib::function<void(const lib::error_code& ec, size_t bytes_transferred)> read_handler;
+typedef lib::function<void(const lib::error_code& ec)> write_frame_handler;
 
 // constants related to the default WebSocket protocol versions available
 #ifdef _WEBSOCKETPP_INITIALIZER_LISTS_ // simplified C++11 version
@@ -294,7 +295,7 @@ private:
     };
 public:
 
-    explicit connection(bool p_is_server, std::string const & ua, const lib::shared_ptr<alog_type>& alog,
+    explicit connection(bool p_is_server, std::string_view ua, const lib::shared_ptr<alog_type>& alog,
                         const lib::shared_ptr<elog_type>& elog, rng_type & rng)
       : transport_con_type(p_is_server, alog, elog)
       , m_handle_read_frame(lib::bind(
@@ -652,7 +653,7 @@ public:
      * @param op The opcode to generated the message with. Default is
      * frame::opcode::text
      */
-    lib::error_code send(std::string const & payload, frame::opcode::value op =
+    lib::error_code send(std::string_view payload, frame::opcode::value op =
         frame::opcode::text);
 
     /// Send a message (raw array overload)
@@ -669,7 +670,7 @@ public:
      * @param op The opcode to generated the message with. Default is
      * frame::opcode::binary
      */
-    lib::error_code send(void const * payload, size_t len, frame::opcode::value
+    lib::error_code send(std::span<const std::uint8_t> payload, frame::opcode::value
         op = frame::opcode::binary);
 
     /// Add a message to the outgoing send queue
@@ -754,13 +755,13 @@ public:
      *
      * @param payload Payload to be used for the ping
      */
-    void ping(std::string const & payload);
+    void ping(std::span<const std::uint8_t> payload);
 
     /// exception free variant of ping
-    void ping(std::string const & payload, lib::error_code & ec);
+    void ping(std::span<const std::uint8_t> payload, lib::error_code & ec);
 
     /// Utility method that gets called back when the ping timer expires
-    void handle_pong_timeout(std::string payload, lib::error_code const & ec);
+    void handle_pong_timeout(std::span<const std::uint8_t> payload, const lib::error_code& ec);
 
     /// Send a pong
     /**
@@ -772,10 +773,10 @@ public:
      *
      * @param payload Payload to be used for the pong
      */
-    void pong(std::string const & payload);
+    void pong(std::span<const std::uint8_t> payload);
 
     /// exception free variant of pong
-    void pong(std::string const & payload, lib::error_code & ec);
+    void pong(std::span<const std::uint8_t> payload, lib::error_code & ec);
 
     /// Close the connection
     /**
@@ -797,10 +798,10 @@ public:
      * @param code The close code to send
      * @param reason The close reason to send
      */
-    void close(close::status::value const code, std::string const & reason);
+    void close(close::status::value const code, std::string_view reason);
 
     /// exception free variant of close
-    void close(close::status::value const code, std::string const & reason,
+    void close(close::status::value const code, std::string_view reason,
         lib::error_code & ec);
 
     ////////////////////////////////////////////////
@@ -823,7 +824,7 @@ public:
      *
      * @return The host component of the connection URI
      */
-    std::string const & get_host() const;
+    std::string_view get_host() const;
 
     /// Returns the resource component of the connection URI
     /**
@@ -832,7 +833,7 @@ public:
      *
      * @return The resource component of the connection URI
      */
-    std::string const & get_resource() const;
+    std::string_view get_resource() const;
 
     /// Returns the port component of the connection URI
     /**
@@ -872,7 +873,7 @@ public:
      *
      * @return The negotiated subprotocol
      */
-    std::string const & get_subprotocol() const;
+    std::string_view get_subprotocol() const;
 
     /// Gets all of the subprotocols requested by the client
     /**
@@ -881,7 +882,7 @@ public:
      *
      * @return A vector of the requested subprotocol
      */
-    std::vector<std::string> const & get_requested_subprotocols() const;
+    std::span<const std::string> get_requested_subprotocols() const;
 
     /// Adds the given subprotocol string to the request list (exception free)
     /**
@@ -896,7 +897,7 @@ public:
      * @param ec A reference to an error code that will be filled in the case of
      * errors
      */
-    void add_subprotocol(std::string const & request, lib::error_code & ec);
+    void add_subprotocol(std::string_view request, lib::error_code & ec);
 
     /// Adds the given subprotocol string to the request list
     /**
@@ -909,7 +910,7 @@ public:
      *
      * @param request The subprotocol to request
      */
-    void add_subprotocol(std::string const & request);
+    void add_subprotocol(std::string_view request);
 
     /// Select a subprotocol to use (exception free)
     /**
@@ -924,7 +925,7 @@ public:
      * @param ec A reference to an error code that will be filled in the case of
      * errors
      */
-    void select_subprotocol(std::string const & value, lib::error_code & ec);
+    void select_subprotocol(std::string_view value, lib::error_code & ec);
 
     /// Select a subprotocol to use
     /**
@@ -937,7 +938,7 @@ public:
      *
      * @param value The subprotocol to select
      */
-    void select_subprotocol(std::string const & value);
+    void select_subprotocol(std::string_view value);
 
     /////////////////////////////////////////////////////////////
     // Pass-through access to the request and response objects //
@@ -950,7 +951,7 @@ public:
      * @param key Name of the header to get
      * @return The value of the header
      */
-    std::string const & get_request_header(std::string const & key) const;
+    std::string_view get_request_header(const std::string& key) const;
 
     /// Retrieve a request body
     /**
@@ -961,7 +962,7 @@ public:
      *
      * @return The value of the request body.
      */
-    std::string const & get_request_body() const;
+    std::span<const std::uint8_t> get_request_body() const;
 
     /// Retrieve a response header
     /**
@@ -970,7 +971,7 @@ public:
      * @param key Name of the header to get
      * @return The value of the header
      */
-    std::string const & get_response_header(std::string const & key) const;
+    std::string_view get_response_header(const std::string& key) const;
 
     /// Get response HTTP status code
     /**
@@ -992,7 +993,7 @@ public:
      *
      * @return The response status message sent
      */
-    std::string const & get_response_msg() const {
+    std::string_view get_response_msg() const {
         return m_response.get_status_msg();
     }
     
@@ -1025,7 +1026,7 @@ public:
      * @param msg Message to set
      * @see websocketpp::http::response::set_status
      */
-    void set_status(http::status_code::value code, std::string const & msg);
+    void set_status(http::status_code::value code, std::string_view msg);
 
     /// Set response body content
     /**
@@ -1040,7 +1041,7 @@ public:
      * @param value String data to include as the body content.
      * @see websocketpp::http::response::set_body
      */
-    void set_body(std::string const & value);
+    void set_body(std::span<const std::uint8_t> value);
 
     /// Append a header
     /**
@@ -1056,7 +1057,7 @@ public:
      * @see replace_header
      * @see websocketpp::http::parser::append_header
      */
-    void append_header(std::string const & key, std::string const & val);
+    void append_header(const std::string& key, const std::string& val);
 
     /// Replace a header
     /**
@@ -1071,7 +1072,7 @@ public:
      * @see append_header
      * @see websocketpp::http::parser::replace_header
      */
-    void replace_header(std::string const & key, std::string const & val);
+    void replace_header(const std::string& key, const std::string& val);
 
     /// Remove a header
     /**
@@ -1083,7 +1084,7 @@ public:
      * @param key The name of the header to remove
      * @see websocketpp::http::parser::remove_header
      */
-    void remove_header(std::string const & key);
+    void remove_header(const std::string& key);
 
     /// Get request object
     /**
@@ -1099,7 +1100,7 @@ public:
      *
      * @return A const reference to the raw request object
      */
-    request_type const & get_request() const {
+    const request_type& get_request() const {
         return m_request;
     }
     
@@ -1118,7 +1119,7 @@ public:
      *
      * @return A const reference to the raw response object
      */
-    response_type const & get_response() const {
+    const response_type& get_response() const {
         return m_response;
     }
     
@@ -1199,7 +1200,7 @@ public:
      *
      * @return The connection's origin value from the opening handshake.
      */
-    std::string const & get_origin() const;
+    std::string_view get_origin() const;
 
     /// Return the connection state.
     /**
@@ -1222,7 +1223,7 @@ public:
     /**
      * @return The WebSocket close reason sent by this endpoint.
      */
-    std::string const & get_local_close_reason() const {
+    std::string_view get_local_close_reason() const {
         return m_local_close_reason;
     }
 
@@ -1238,7 +1239,7 @@ public:
     /**
      * @return The WebSocket close reason sent by the remote endpoint.
      */
-    std::string const & get_remote_close_reason() const {
+    std::string_view get_remote_close_reason() const {
         return m_remote_close_reason;
     }
 
@@ -1290,19 +1291,19 @@ public:
 
     void read_handshake(size_t num_bytes);
 
-    void handle_read_handshake(lib::error_code const & ec,
+    void handle_read_handshake(const lib::error_code& ec,
         size_t bytes_transferred);
-    void handle_read_http_response(lib::error_code const & ec,
+    void handle_read_http_response(const lib::error_code& ec,
         size_t bytes_transferred);
 
     
-    void handle_write_http_response(lib::error_code const & ec);
-    void handle_send_http_request(lib::error_code const & ec);
+    void handle_write_http_response(const lib::error_code& ec);
+    void handle_send_http_request(const lib::error_code& ec);
 
-    void handle_open_handshake_timeout(lib::error_code const & ec);
-    void handle_close_handshake_timeout(lib::error_code const & ec);
+    void handle_open_handshake_timeout(const lib::error_code& ec);
+    void handle_close_handshake_timeout(const lib::error_code& ec);
 
-    void handle_read_frame(lib::error_code const & ec, size_t bytes_transferred);
+    void handle_read_frame(const lib::error_code& ec, size_t bytes_transferred);
     void read_frame();
 
     /// Get array of WebSocket protocol versions that this connection supports.
@@ -1312,8 +1313,8 @@ public:
     /// internally by the endpoint class.
     void set_termination_handler(termination_handler new_handler);
 
-    void terminate(lib::error_code const & ec);
-    void handle_terminate(terminate_status tstat, lib::error_code const & ec);
+    void terminate(const lib::error_code& ec);
+    void handle_terminate(terminate_status tstat, const lib::error_code& ec);
 
     /// Checks if there are frames in the send queue and if there are sends one
     /**
@@ -1335,7 +1336,7 @@ public:
      * @param ec A status code from the transport layer, zero on success,
      * non-zero otherwise.
      */
-    void handle_write_frame(lib::error_code const & ec);
+    void handle_write_frame(const lib::error_code& ec);
 // protected:
     // This set of methods would really like to be protected, but doing so 
     // requires that the endpoint be able to friend the connection. This is 
@@ -1358,7 +1359,7 @@ public:
         transport_con_type::set_handle(hdl);
     }
 protected:
-    void handle_transport_init(lib::error_code const & ec);
+    void handle_transport_init(const lib::error_code& ec);
 
     /// Set m_processor based on information in m_request. Set m_response
     /// status and return an error code indicating status.
@@ -1371,13 +1372,13 @@ private:
     
 
     /// Completes m_response, serializes it, and sends it out on the wire.
-    void write_http_response(lib::error_code const & ec);
+    void write_http_response(const lib::error_code& ec);
 
     /// Sends an opening WebSocket connect request
     void send_http_request();
 
     /// Alternate path for write_http_response in error conditions
-    void write_http_response_error(lib::error_code const & ec);
+    void write_http_response_error(const lib::error_code& ec);
 
     /// Process control message
     /**
@@ -1397,7 +1398,7 @@ private:
      * @return A status code, zero on success, non-zero otherwise
      */
     lib::error_code send_close_ack(close::status::value code =
-        close::status::blank, std::string const & reason = std::string());
+        close::status::blank, const std::string& reason = std::string());
 
     /// Send close frame
     /**
@@ -1415,7 +1416,7 @@ private:
      * @return A status code, zero on success, non-zero otherwise
      */
     lib::error_code send_close_frame(close::status::value code =
-        close::status::blank, std::string const & reason = std::string(), bool ack = false,
+        close::status::blank, const std::string& reason = std::string(), bool ack = false,
         bool terminal = false);
 
     /// Get a pointer to a new WebSocket protocol processor for a given version
@@ -1548,7 +1549,7 @@ private:
 
     /// @todo this is not memory efficient. this value is not used after the
     /// handshake.
-    std::string m_handshake_buffer;
+    std::vector<std::uint8_t> m_handshake_buffer;
 
     /// Pointer to the processor object for this connection
     /**
@@ -1577,7 +1578,7 @@ private:
     /**
      * Lock m_write_lock
      */
-    std::vector<transport::buffer> m_send_buffer;
+    std::vector<std::span<const std::uint8_t>> m_send_buffer;
 
     /// a list of pointers to hold on to the messages being written to keep them
     /// from going out of scope before the write is complete.

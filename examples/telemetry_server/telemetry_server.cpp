@@ -85,7 +85,7 @@ public:
         );
     }
 
-    void on_timer(websocketpp::lib::error_code const & ec) {
+    void on_timer(websocketpp::const lib::error_code& ec) {
         if (ec) {
             // there was an error, stop telemetry
             m_endpoint.get_alog().write(websocketpp::log::alevel::app,

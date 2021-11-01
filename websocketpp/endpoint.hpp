@@ -33,7 +33,9 @@
 #include <websocketpp/logger/levels.hpp>
 #include <websocketpp/version.hpp>
 
+#include <span>
 #include <string>
+#include <string_view>
 
 namespace websocketpp {
 
@@ -193,7 +195,7 @@ public:
      *
      * @param ua The string to set the user agent to.
      */
-    void set_user_agent(std::string const & ua) {
+    void set_user_agent(const std::string& ua) {
         scoped_lock_type guard(m_mutex);
         m_user_agent = ua;
     }
@@ -557,7 +559,7 @@ public:
      * @param [in] op The opcode to generated the message with.
      * @param [out] ec A code to fill in for errors
      */
-    void send(connection_hdl hdl, std::string const & payload,
+    void send(connection_hdl hdl, std::string_view payload,
         frame::opcode::value op, lib::error_code & ec);
     /// Create a message and add it to the outgoing send queue
     /**
@@ -568,21 +570,21 @@ public:
      * @param [in] op The opcode to generated the message with.
      * @param [out] ec A code to fill in for errors
      */
-    void send(connection_hdl hdl, std::string const & payload,
+    void send(connection_hdl hdl, std::string_view payload,
         frame::opcode::value op);
 
-    void send(connection_hdl hdl, void const * payload, size_t len,
+    void send(connection_hdl hdl, std::span<const std::uint8_t> payload,
         frame::opcode::value op, lib::error_code & ec);
-    void send(connection_hdl hdl, void const * payload, size_t len,
+    void send(connection_hdl hdl, std::span<const std::uint8_t> payload,
         frame::opcode::value op);
 
     void send(connection_hdl hdl, message_ptr msg, lib::error_code & ec);
     void send(connection_hdl hdl, message_ptr msg);
 
     void close(connection_hdl hdl, close::status::value const code,
-        std::string const & reason, lib::error_code & ec);
+        const std::string& reason, lib::error_code & ec);
     void close(connection_hdl hdl, close::status::value const code,
-        std::string const & reason);
+        const std::string& reason);
 
     /// Send a ping to a specific connection
     /**
@@ -592,7 +594,7 @@ public:
      * @param [in] payload The payload string to send.
      * @param [out] ec A reference to an error code to fill in
      */
-    void ping(connection_hdl hdl, std::string const & payload,
+    void ping(connection_hdl hdl, std::span<const std::uint8_t> payload,
         lib::error_code & ec);
     /// Send a ping to a specific connection
     /**
@@ -603,7 +605,7 @@ public:
      * @param [in] hdl The connection_hdl of the connection to send to.
      * @param [in] payload The payload string to send.
      */
-    void ping(connection_hdl hdl, std::string const & payload);
+    void ping(connection_hdl hdl, std::span<const std::uint8_t> payload);
 
     /// Send a pong to a specific connection
     /**
@@ -613,7 +615,7 @@ public:
      * @param [in] payload The payload string to send.
      * @param [out] ec A reference to an error code to fill in
      */
-    void pong(connection_hdl hdl, std::string const & payload,
+    void pong(connection_hdl hdl, std::span<const std::uint8_t> payload,
         lib::error_code & ec);
     /// Send a pong to a specific connection
     /**
@@ -624,7 +626,7 @@ public:
      * @param [in] hdl The connection_hdl of the connection to send to.
      * @param [in] payload The payload string to send.
      */
-    void pong(connection_hdl hdl, std::string const & payload);
+    void pong(connection_hdl hdl, std::span<const std::uint8_t> payload);
 
     /// Retrieves a connection_ptr from a connection_hdl (exception free)
     /**

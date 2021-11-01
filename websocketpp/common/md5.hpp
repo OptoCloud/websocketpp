@@ -68,6 +68,7 @@
  */
 
 #include <stddef.h>
+#include <array>
 #include <string>
 #include <cstring>
 
@@ -412,26 +413,22 @@ void md5_finish(md5_state_t *pms, md5_byte_t digest[16]) {
 }
 
 // some convenience c++ functions
-inline std::string md5_hash_string(std::string const & s) {
-    char digest[16];
+inline std::array<std::uint8_t, 16> md5_hash_string(std::string_view s) {
+    std::array<std::uint8_t, 16> digest;
 
     md5_state_t state;
 
     md5_init(&state);
-    md5_append(&state, (md5_byte_t const *)s.c_str(), s.size());
-    md5_finish(&state, (md5_byte_t *)digest);
+    md5_append(&state, (md5_byte_t const *)s.data(), s.size());
+    md5_finish(&state, (md5_byte_t *)digest.data());
 
-    std::string ret;
-    ret.resize(16);
-    std::copy(digest,digest+16,ret.begin());
-
-    return ret;
+    return digest;
 }
 
 const char hexval[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
-inline std::string md5_hash_hex(std::string const & input) {
-    std::string hash = md5_hash_string(input);
+inline std::string md5_hash_hex(std::string_view input) {
+    std::array<std::uint8_t, 16> hash = md5_hash_string(input);
     std::string hex;
 
     for (size_t i = 0; i < hash.size(); i++) {

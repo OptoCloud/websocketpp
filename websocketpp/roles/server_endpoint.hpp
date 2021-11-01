@@ -163,7 +163,7 @@ public:
     }
 
     /// Handler callback for start_accept
-    void handle_accept(connection_ptr con, lib::error_code const & ec) {
+    void handle_accept(connection_ptr con, const lib::error_code& ec) {
         if (ec) {
             con->terminate(ec);
 

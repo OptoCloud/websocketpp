@@ -74,7 +74,7 @@ public:
         return 0;
     }
 
-    lib::error_code validate_handshake(request_type const & r) const {
+    lib::error_code validate_handshake(const request_type& r) const {
         if (r.get_method() != "GET") {
             return make_error_code(error::invalid_http_method);
         }
@@ -97,8 +97,7 @@ public:
         return lib::error_code();
     }
 
-    lib::error_code process_handshake(request_type const & req,
-        std::string const & subprotocol, response_type & res) const
+    lib::error_code process_handshake(const request_type& req, const std::string& subprotocol, response_type& res) const
     {
         char key_final[16];
 
@@ -113,14 +112,12 @@ public:
         // if it is less the final key will almost certainly be wrong.
         // TODO: decide if it is best to silently fail here or produce some sort
         //       of warning or exception.
-        std::string const & key3 = req.get_header("Sec-WebSocket-Key3");
-        std::copy(key3.c_str(),
-                  key3.c_str()+(std::min)(static_cast<size_t>(8), key3.size()),
-                  &key_final[8]);
+        std::string_view key3 = req.get_header("Sec-WebSocket-Key3");
+        std::copy_n(key3.begin(), std::min(static_cast<size_t>(8), key3.size()), &key_final[8]);
 
         res.append_header(
             "Sec-WebSocket-Key3",
-            md5::md5_hash_string(std::string(key_final,16))
+            utility::to_str(md5::md5_hash_string({ key_final, 16 }))
         );
 
         res.append_header("Upgrade","WebSocket");
@@ -129,7 +126,7 @@ public:
         // Echo back client's origin unless our local application set a
         // more restrictive one.
         if (res.get_header("Sec-WebSocket-Origin").empty()) {
-            res.append_header("Sec-WebSocket-Origin",req.get_header("Origin"));
+            res.append_header("Sec-WebSocket-Origin", utility::to_str(req.get_header("Origin")));
         }
 
         // Echo back the client's request host unless our local application
@@ -140,7 +137,7 @@ public:
         }
 
         if (!subprotocol.empty()) {
-            res.replace_header("Sec-WebSocket-Protocol",subprotocol);
+            res.replace_header("Sec-WebSocket-Protocol", subprotocol);
         }
 
         return lib::error_code();
@@ -155,8 +152,7 @@ public:
      * @param [in] uri The uri being connected to
      * @param [in] subprotocols The list of subprotocols to request
      */
-    lib::error_code client_handshake_request(request_type &, uri_ptr,
-        std::vector<std::string> const &) const
+    lib::error_code client_handshake_request(request_type &,uri_ptr,std::span<const std::string>) const
     {
         return error::make_error_code(error::no_protocol_support);
     }
@@ -170,19 +166,24 @@ public:
      * @param res The reponse to generate
      * @return An error code, 0 on success, non-zero for other errors
      */
-    lib::error_code validate_server_handshake_response(request_type const &,
-        response_type &) const
+    lib::error_code validate_server_handshake_response(const request_type&,response_type&) const
     {
         return error::make_error_code(error::no_protocol_support);
     }
 
-    std::string get_raw(response_type const & res) const {
+    std::vector<std::uint8_t> get_raw(const response_type& res) const {
         response_type temp = res;
         temp.remove_header("Sec-WebSocket-Key3");
-        return temp.raw() + res.get_header("Sec-WebSocket-Key3");
+
+        auto wsKey = res.get_header("Sec-WebSocket-Key3");
+
+        std::vector<std::uint8_t> out = temp.raw();
+        out.insert(out.end(), wsKey.begin(), wsKey.end());
+
+        return out;
     }
 
-    std::string const & get_origin(request_type const & r) const {
+    std::string_view get_origin(const request_type& r) const {
         return r.get_header("Origin");
     }
 
@@ -195,7 +196,7 @@ public:
      * @param [out] subprotocol_list A reference to a vector of strings to store
      * the results in.
      */
-    lib::error_code extract_subprotocols(request_type const & req,
+    lib::error_code extract_subprotocols(const request_type& req,
         std::vector<std::string> & subprotocol_list)
     {
         if (!req.get_header("Sec-WebSocket-Protocol").empty()) {
@@ -214,8 +215,8 @@ public:
         return lib::error_code();
     }
 
-    uri_ptr get_uri(request_type const & request) const {
-        std::string h = request.get_header("Host");
+    uri_ptr get_uri(const request_type& request) const {
+        std::string_view h = request.get_header("Host");
 
         size_t last_colon = h.rfind(":");
         size_t last_sbrace = h.rfind("]");
@@ -281,7 +282,7 @@ public:
 
                 // Copy payload bytes into message
                 l = static_cast<size_t>(it-(buf+p));
-                m_msg_ptr->append_payload(buf+p,l);
+                m_msg_ptr->append_payload({buf + p, l});
                 p += l;
 
                 if (it != buf+len) {
@@ -339,7 +340,7 @@ public:
             return make_error_code(error::invalid_opcode);
         }
 
-        std::string& i = in->get_raw_payload();
+        std::span<const std::uint8_t> i = in->get_payload();
         //std::string& o = out->get_raw_payload();
 
         // validate payload utf8
@@ -348,11 +349,11 @@ public:
         }
 
         // generate header
-        out->set_header(std::string(reinterpret_cast<char const *>(&msg_hdr),1));
+        out->set_header({ reinterpret_cast<std::uint8_t const *>(&msg_hdr),1 });
 
         // process payload
         out->set_payload(i);
-        out->append_payload(std::string(reinterpret_cast<char const *>(&msg_ftr),1));
+        out->append_payload({ reinterpret_cast<std::uint8_t const *>(&msg_ftr),1 });
 
         // hybi00 doesn't support compression
         // hybi00 doesn't have masking
@@ -370,7 +371,7 @@ public:
      * @param out The message buffer to prepare the ping in.
      * @return Status code, zero on success, non-zero on failure
      */
-    lib::error_code prepare_ping(std::string const &, message_ptr) const
+    lib::error_code prepare_ping(std::span<const std::uint8_t>, message_ptr) const
     {
         return lib::error_code(error::no_protocol_support);
     }
@@ -383,7 +384,7 @@ public:
      * @param out The message buffer to prepare the pong in.
      * @return Status code, zero on success, non-zero on failure
      */
-    lib::error_code prepare_pong(std::string const &, message_ptr) const
+    lib::error_code prepare_pong(std::span<const std::uint8_t>, message_ptr) const
     {
         return lib::error_code(error::no_protocol_support);
     }
@@ -398,8 +399,7 @@ public:
      * @param out The message buffer to prepare the fame in
      * @return Status code, zero on success, non-zero on failure
      */
-    lib::error_code prepare_close(close::status::value, std::string const &, 
-        message_ptr out) const
+    lib::error_code prepare_close(close::status::value, const std::string_view, message_ptr out) const
     {
         if (!out) {
             return lib::error_code(error::invalid_arguments);
@@ -414,7 +414,7 @@ public:
         return lib::error_code();
     }
 private:
-    void decode_client_key(std::string const & key, char * result) const {
+    void decode_client_key(std::string_view key, char * result) const {
         unsigned int spaces = 0;
         std::string digits;
         uint32_t num;

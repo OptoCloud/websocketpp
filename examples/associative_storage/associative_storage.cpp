@@ -58,7 +58,7 @@ public:
     }
 
     connection_data& get_data_from_hdl(connection_hdl hdl) {
-        auto it = m_connections.find(hdl);
+        con_list::iterator it = m_connections.find(hdl);
 
         if (it == m_connections.end()) {
             // this connection is not in the list. This really shouldn't happen

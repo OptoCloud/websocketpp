@@ -75,16 +75,21 @@ private:
 struct ci_less {
     // case-independent (ci) compare_less binary function
     struct nocase_compare {
-        bool operator() (unsigned char const & c1, unsigned char const & c2) const {
-            return tolower (c1) < tolower (c2);
+        constexpr bool operator() (char c1, char c2) const {
+            c1 -= (c1 >= 'a' && c1 <= 'z') * 32;
+            c2 -= (c2 >= 'a' && c2 <= 'z') * 32;
+
+            return c1 < c2;
         }
     };
-    bool operator() (std::string const & s1, std::string const & s2) const {
+    bool operator() (std::string_view s1, std::string_view s2) const {
         return std::lexicographical_compare
             (s1.begin (), s1.end (),   // source range
             s2.begin (), s2.end (),   // dest range
-            nocase_compare ());  // comparison
+            nocase_compare());  // comparison
     }
+
+    using is_transparent = void;
 };
 
 /// Find substring (case insensitive)
@@ -133,7 +138,7 @@ typename T::const_iterator ci_find_substr(T const & haystack,
  * @param [in] in The string to convert
  * @return The converted string
  */
-std::string to_lower(std::string const & in);
+std::string to_lower(const std::string& in);
 
 /// Replace all occurrances of a substring with another
 /**
@@ -143,8 +148,8 @@ std::string to_lower(std::string const & in);
  * @return A copy of `subject` with all occurances of `search` replaced with
  *         `replace`
  */
-std::string string_replace_all(std::string subject, std::string const & search,
-                               std::string const & replace);
+std::string string_replace_all(std::string subject, const std::string& search,
+                               const std::string& replace);
 
 /// Convert std::string to ascii printed string of hex digits
 /**
@@ -152,7 +157,7 @@ std::string string_replace_all(std::string subject, std::string const & search,
  * @return A copy of `input` converted to the printable representation of the
  *         hex values of its data.
  */
-std::string to_hex(std::string const & input);
+std::string to_hex(std::string_view input);
 
 /// Convert byte array (uint8_t) to ascii printed string of hex digits
 /**
@@ -161,16 +166,7 @@ std::string to_hex(std::string const & input);
  * @return A copy of `input` converted to the printable representation of the
  *         hex values of its data.
  */
-std::string to_hex(uint8_t const * input, size_t length);
-
-/// Convert char array to ascii printed string of hex digits
-/**
- * @param [in] input The char array to print
- * @param [in] length The length of input
- * @return A copy of `input` converted to the printable representation of the
- *         hex values of its data.
- */
-std::string to_hex(char const * input, size_t length);
+std::string to_hex(std::span<const std::uint8_t> input);
 
 } // namespace utility
 } // namespace websocketpp

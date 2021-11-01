@@ -250,7 +250,7 @@ namespace websocketpp {
 
 class exception : public std::exception {
 public:
-    exception(std::string const & msg, lib::error_code ec = make_error_code(error::general))
+    exception(const std::string& msg, lib::error_code ec = make_error_code(error::general))
       : m_msg(msg.empty() ? ec.message() : msg), m_code(ec)
     {}
 

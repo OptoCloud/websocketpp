@@ -30,48 +30,76 @@
 
 #include <algorithm>
 #include <string>
+#include <vector>
+#include <span>
 
 namespace websocketpp {
 namespace utility {
 
-inline std::string to_lower(std::string const & in) {
-    std::string out = in;
-    std::transform(out.begin(),out.end(),out.begin(),::tolower);
+constexpr void to_lower_impl(char* data, std::size_t size) {
+    for (std::size_t i = 0; i < size; i++) {
+        if (data[i] >= 'A' && data[i] <= 'Z') {
+            data[i] += 32;
+        }
+    }
+}
+
+constexpr void to_hex_impl(const std::uint8_t* in, char* out, std::size_t inSize) {
+    constexpr std::string_view hexchars = "0123456789ABCDEF";
+    for (std::size_t i = 0; i < inSize; i++) {
+        std::size_t j = i * 3;
+        out[j + 0] = hexchars[(in[j] & 0xF0) >> 4];
+        out[j + 1] = hexchars[(in[j] & 0x0F) >> 0];
+        out[j + 2] = ' ';
+    }
+}
+
+inline std::string to_lower(std::string_view in) {
+    std::string out(in.begin(), in.end());
+
+    to_lower_impl(out.data(), out.size());
+
     return out;
 }
 
-inline std::string to_hex(std::string const & input) {
+inline std::string to_hex(std::string_view input) {
     std::string output;
-    std::string hex = "0123456789ABCDEF";
+    output.resize(input.size() * 3);
 
-    for (size_t i = 0; i < input.size(); i++) {
-        output += hex[(input[i] & 0xF0) >> 4];
-        output += hex[input[i] & 0x0F];
-        output += " ";
-    }
+    to_hex_impl(reinterpret_cast<const std::uint8_t*>(input.data()), output.data(), input.size());
 
     return output;
 }
 
-inline std::string to_hex(uint8_t const * input, size_t length) {
+inline std::string to_hex(std::span<const std::uint8_t> input) {
     std::string output;
-    std::string hex = "0123456789ABCDEF";
+    output.resize(input.size() * 3);
 
-    for (size_t i = 0; i < length; i++) {
-        output += hex[(input[i] & 0xF0) >> 4];
-        output += hex[input[i] & 0x0F];
-        output += " ";
-    }
+    to_hex_impl(input.data(), output.data(), input.size());
 
     return output;
 }
 
 inline std::string to_hex(const char* input,size_t length) {
-    return to_hex(reinterpret_cast<const uint8_t*>(input),length);
+    const std::uint8_t* ptr = (const std::uint8_t*)input;
+    return to_hex(std::span<const std::uint8_t>{ ptr, ptr + length });
 }
 
-inline std::string string_replace_all(std::string subject, std::string const &
-    search, std::string const & replace)
+inline std::vector<std::uint8_t> to_vec(std::string_view input) {
+    return std::vector<std::uint8_t>(input.begin(), input.end());
+}
+inline std::string to_str(std::string_view input) {
+    return std::string(input);
+}
+inline std::string to_str(std::span<const std::uint8_t> input) {
+    return std::string(input.begin(), input.end());
+}
+inline std::string_view to_strview(std::span<const std::uint8_t> input) {
+    return { reinterpret_cast<const char*>(input.data()), input.size() };
+}
+
+inline std::string string_replace_all(std::string subject, const std::string&
+    search, const std::string& replace)
 {
     size_t pos = 0;
     while((pos = subject.find(search, pos)) != std::string::npos) {

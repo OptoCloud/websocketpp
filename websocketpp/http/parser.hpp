@@ -57,7 +57,7 @@ namespace body_encoding {
     };
 }
 
-typedef std::map<std::string, std::string, utility::ci_less > header_list;
+typedef std::map<std::string, std::string, utility::ci_less> header_list;
 
 /// Read and return the next token in the stream
 /**
@@ -376,18 +376,18 @@ InputIterator extract_parameters(InputIterator begin, InputIterator end,
     return cursor;
 }
 
-inline std::string strip_lws(std::string const & input) {
-    std::string::const_iterator begin = extract_all_lws(input.begin(),input.end());
+inline std::string strip_lws(std::string_view input) {
+    std::string_view::const_iterator begin = extract_all_lws(input.begin(), input.end());
     if (begin == input.end()) {
         return std::string();
     }
 
-    std::string::const_reverse_iterator rbegin = extract_all_lws(input.rbegin(),input.rend());
+    std::string_view::const_reverse_iterator rbegin = extract_all_lws(input.rbegin(),input.rend());
     if (rbegin == input.rend()) {
         return std::string();
     }
 
-    return std::string(begin,rbegin.base());
+    return std::string(begin, rbegin.base());
 }
 
 /// Base HTTP parser
@@ -407,7 +407,7 @@ public:
     /**
      * @return The version string for this parser
      */
-    std::string const & get_version() const {
+    std::string_view get_version() const {
         return m_version;
     }
 
@@ -418,7 +418,7 @@ public:
      *
      * @param [in] version The value to set the HTTP version to.
      */
-    void set_version(std::string const & version);
+    void set_version(std::string_view version);
 
     /// Get the value of an HTTP header
     /**
@@ -427,7 +427,7 @@ public:
      * @param [in] key The name/key of the header to get.
      * @return The value associated with the given HTTP header key.
      */
-    std::string const & get_header(std::string const & key) const;
+    std::string_view get_header(const std::string& key) const;
 
     /// Extract an HTTP parameter list from a parser header.
     /**
@@ -438,8 +438,7 @@ public:
      * @param [out] out The parameter list to store extracted parameters in.
      * @return Whether or not the input was a valid parameter list.
      */
-    bool get_header_as_plist(std::string const & key, parameter_list & out)
-        const;
+    bool get_header_as_plist(const std::string& key, parameter_list& out) const;
 
     /// Return a list of all HTTP headers
     /**
@@ -466,7 +465,7 @@ public:
      * @param [in] key The name/key of the header to append to.
      * @param [in] val The value to append.
      */
-    void append_header(std::string const & key, std::string const & val);
+    void append_header(const std::string& key, const std::string& val);
 
     /// Set a value for an HTTP header, replacing an existing value
     /**
@@ -483,7 +482,7 @@ public:
      * @param [in] key The name/key of the header to append to.
      * @param [in] val The value to append.
      */
-    void replace_header(std::string const & key, std::string const & val);
+    void replace_header(const std::string& key, const std::string& val);
 
     /// Remove a header from the parser
     /**
@@ -494,7 +493,7 @@ public:
      *
      * @param [in] key The name/key of the header to remove.
      */
-    void remove_header(std::string const & key);
+    void remove_header(const std::string& key);
 
     /// Get HTTP body
     /**
@@ -502,7 +501,7 @@ public:
      *
      * @return The body of the HTTP message.
      */
-    std::string const & get_body() const {
+    std::span<const std::uint8_t> get_body() const {
         return m_body;
     }
 
@@ -515,7 +514,7 @@ public:
      *
      * @param value String data to include as the body content.
      */
-    void set_body(std::string const & value);
+    void set_body(std::span<const std::uint8_t> value);
 
     /// Get body size limit
     /**
@@ -549,8 +548,7 @@ public:
      * @param [out] out The parameter list to store extracted parameters in.
      * @return Whether or not the input was a valid parameter list.
      */
-    bool parse_parameter_list(std::string const & in, parameter_list & out)
-        const;
+    bool parse_parameter_list(std::string_view in, parameter_list & out) const;
 protected:
     /// Process a header line
     /**
@@ -614,10 +612,10 @@ protected:
     
     size_t                  m_header_bytes;
     
-    std::string             m_body;
-    size_t                  m_body_bytes_needed;
-    size_t                  m_body_bytes_max;
-    body_encoding::value    m_body_encoding;
+    std::vector<std::uint8_t> m_body;
+    size_t                    m_body_bytes_needed;
+    size_t                    m_body_bytes_max;
+    body_encoding::value      m_body_encoding;
 };
 
 } // namespace parser

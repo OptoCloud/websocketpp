@@ -100,7 +100,7 @@ public:
         m_thread = websocketpp::lib::make_shared<websocketpp::lib::thread>(&client::run, &m_endpoint);
     }
 
-    int connect(std::string const & uri) {
+    int connect(const std::string& uri) {
         websocketpp::lib::error_code ec;
 
         client::connection_ptr con = m_endpoint.get_connection(uri, ec);

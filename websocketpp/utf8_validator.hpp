@@ -31,7 +31,8 @@
 
 #include <websocketpp/common/stdint.hpp>
 
-#include <string>
+#include <span>
+#include <string_view>
 
 namespace websocketpp {
 namespace utf8_validator {
@@ -140,7 +141,20 @@ private:
  * convenience function that creates a validator, validates a complete string
  * and returns the result.
  */
-inline bool validate(std::string const & s) {
+inline bool validate(std::string_view s) {
+    validator v;
+    if (!v.decode(s.begin(),s.end())) {
+        return false;
+    }
+    return v.complete();
+}
+
+/// Validate a UTF8 string
+/**
+ * convenience function that creates a validator, validates a complete span
+ * and returns the result.
+ */
+inline bool validate(std::span<const std::uint8_t> s) {
     validator v;
     if (!v.decode(s.begin(),s.end())) {
         return false;

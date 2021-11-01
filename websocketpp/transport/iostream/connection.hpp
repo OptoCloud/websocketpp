@@ -45,6 +45,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <span>
 
 namespace websocketpp {
 namespace transport {
@@ -436,7 +437,7 @@ protected:
      * @param handler The callback to invoke when the operation is complete or
      * ends in an error
      */
-    void async_read_at_least(size_t num_bytes, char *buf, size_t len,
+    void async_read_at_least(size_t num_bytes, std::uint8_t* buf, size_t len,
         read_handler handler)
     {
         std::stringstream s;
@@ -484,7 +485,7 @@ protected:
      * @param len number of bytes to write
      * @param handler Callback to invoke with operation status.
      */
-    void async_write(char const * buf, size_t len, transport::write_handler
+    void async_write(const std::uint8_t* buf, size_t len, transport::write_handler
         handler)
     {
         m_alog->write(log::alevel::devel,"iostream_con async_write");
@@ -493,7 +494,7 @@ protected:
         lib::error_code ec;
 
         if (m_output_stream) {
-            m_output_stream->write(buf,len);
+            m_output_stream->write(reinterpret_cast<const char*>(buf), len);
 
             if (m_output_stream->bad()) {
                 ec = make_error_code(error::bad_stream);
@@ -524,7 +525,7 @@ protected:
      * @param bufs vector of buffers to write
      * @param handler Callback to invoke with operation status.
      */
-    void async_write(std::vector<buffer> const & bufs, transport::write_handler
+    void async_write(std::span<const std::span<const std::uint8_t>> spans, transport::write_handler
         handler)
     {
         m_alog->write(log::alevel::devel,"iostream_con async_write buffer list");
@@ -533,9 +534,8 @@ protected:
         lib::error_code ec;
 
         if (m_output_stream) {
-            std::vector<buffer>::const_iterator it;
-            for (it = bufs.begin(); it != bufs.end(); it++) {
-                m_output_stream->write((*it).buf,(*it).len);
+            for (auto& span : spans) {
+                m_output_stream->write((const char*)span.data(), span.size());
 
                 if (m_output_stream->bad()) {
                     ec = make_error_code(error::bad_stream);
@@ -543,11 +543,10 @@ protected:
                 }
             }
         } else if (m_vector_write_handler) {
-            ec = m_vector_write_handler(m_connection_hdl, bufs);
+            ec = m_vector_write_handler(m_connection_hdl, spans);
         } else if (m_write_handler) {
-            std::vector<buffer>::const_iterator it;
-            for (it = bufs.begin(); it != bufs.end(); it++) {
-                ec = m_write_handler(m_connection_hdl, (*it).buf, (*it).len);
+            for (auto& span : spans) {
+                ec = m_write_handler(m_connection_hdl, span.data(), span.size());
                 if (ec) {break;}
             }
 
@@ -609,7 +608,7 @@ private:
                 break;
             }
 
-            in.read(m_buf+m_cursor,static_cast<std::streamsize>(m_len-m_cursor));
+            in.read(reinterpret_cast<char*>(m_buf + m_cursor), static_cast<std::streamsize>(m_len - m_cursor));
 
             if (in.gcount() == 0) {
                 m_elog->write(log::elevel::devel,"read zero bytes");
@@ -631,7 +630,7 @@ private:
         }
     }
 
-    size_t read_some_impl(char const * buf, size_t len) {
+    std::size_t read_some_impl(const std::uint8_t* buf, std::size_t len) {
         m_alog->write(log::alevel::devel,"iostream_con read_some");
 
         if (!m_reading) {
@@ -639,7 +638,7 @@ private:
             return 0;
         }
 
-        size_t bytes_to_copy = (std::min)(len,m_len-m_cursor);
+        std::size_t bytes_to_copy = (std::min)(len,m_len-m_cursor);
 
         std::copy(buf,buf+bytes_to_copy,m_buf+m_cursor);
 
@@ -668,7 +667,7 @@ private:
      *
      * @param ec The error code to forward to the read handler
      */
-    void complete_read(lib::error_code const & ec) {
+    void complete_read(const lib::error_code& ec) {
         m_reading = false;
 
         read_handler handler = m_read_handler;
@@ -678,11 +677,11 @@ private:
     }
 
     // Read space (Protected by m_read_mutex)
-    char *          m_buf;
-    size_t          m_len;
-    size_t          m_bytes_needed;
+    std::uint8_t*          m_buf;
+    std::size_t          m_len;
+    std::size_t          m_bytes_needed;
     read_handler    m_read_handler;
-    size_t          m_cursor;
+    std::size_t          m_cursor;
 
     // transport resources
     std::ostream *  m_output_stream;

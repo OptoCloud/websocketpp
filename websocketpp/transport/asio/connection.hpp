@@ -37,6 +37,7 @@
 
 #include <websocketpp/base64/base64.hpp>
 #include <websocketpp/error.hpp>
+#include <websocketpp/utilities.hpp>
 #include <websocketpp/uri.hpp>
 
 #include <websocketpp/common/asio.hpp>
@@ -50,6 +51,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <span>
 
 namespace websocketpp {
 namespace transport {
@@ -186,7 +188,7 @@ public:
      *
      * @param ec A status value
      */
-    void set_proxy(std::string const & uri, lib::error_code & ec) {
+    void set_proxy(const std::string& uri, lib::error_code & ec) {
         // TODO: return errors for illegal URIs here?
         // TODO: should https urls be illegal for the moment?
         m_proxy = uri;
@@ -195,7 +197,7 @@ public:
     }
 
     /// Set the proxy to connect through (exception)
-    void set_proxy(std::string const & uri) {
+    void set_proxy(const std::string& uri) {
         lib::error_code ec;
         set_proxy(uri,ec);
         if (ec) { throw exception(ec); }
@@ -214,7 +216,7 @@ public:
      *
      * @param ec A status value
      */
-    void set_proxy_basic_auth(std::string const & username, std::string const &
+    void set_proxy_basic_auth(const std::string& username, const std::string&
         password, lib::error_code & ec)
     {
         if (!m_proxy_data) {
@@ -229,7 +231,7 @@ public:
     }
 
     /// Set the basic auth credentials to use (exception)
-    void set_proxy_basic_auth(std::string const & username, std::string const &
+    void set_proxy_basic_auth(const std::string& username, const std::string&
         password)
     {
         lib::error_code ec;
@@ -264,7 +266,7 @@ public:
         if (ec) { throw exception(ec); }
     }
 
-    std::string const & get_proxy() const {
+    const std::string& get_proxy() const {
         return m_proxy;
     }
 
@@ -348,7 +350,7 @@ public:
      * @param ec The status code
      */
     void handle_timer(timer_ptr, timer_handler callback,
-        lib::asio::error_code const & ec)
+        const lib::asio::error_code& ec)
     {
         if (ec) {
             if (ec == lib::asio::error::operation_aborted) {
@@ -434,7 +436,7 @@ protected:
      *
      * @return Status code indicating what errors occurred, if any
      */
-    lib::error_code proxy_init(std::string const & authority) {
+    lib::error_code proxy_init(const std::string& authority) {
         if (!m_proxy_data) {
             return websocketpp::error::make_error_code(
                 websocketpp::error::invalid_state);
@@ -471,7 +473,7 @@ protected:
         return ec;
     }
 
-    void handle_pre_init(init_handler callback, lib::error_code const & ec) {
+    void handle_pre_init(init_handler callback, const lib::error_code& ec) {
         if (m_alog->static_test(log::alevel::devel)) {
             m_alog->write(log::alevel::devel,"asio connection handle pre_init");
         }
@@ -534,7 +536,7 @@ protected:
      * @param ec The status code
      */
     void handle_post_init_timeout(timer_ptr, init_handler callback,
-        lib::error_code const & ec)
+        const lib::error_code& ec)
     {
         lib::error_code ret_ec;
 
@@ -570,7 +572,7 @@ protected:
      * @param ec The status code
      */
     void handle_post_init(timer_ptr post_timer, init_handler callback,
-        lib::error_code const & ec)
+        const lib::error_code& ec)
     {
         if (ec == transport::error::operation_aborted ||
             (post_timer && lib::asio::is_neg(post_timer->expires_from_now())))
@@ -611,7 +613,7 @@ protected:
         m_bufs.push_back(lib::asio::buffer(m_proxy_data->write_buf.data(),
                                            m_proxy_data->write_buf.size()));
 
-        m_alog->write(log::alevel::devel,m_proxy_data->write_buf);
+        m_alog->write(log::alevel::devel, utility::to_str(m_proxy_data->write_buf));
 
         // Set a timer so we don't wait forever for the proxy to respond
         m_proxy_data->timer = this->set_timer(
@@ -648,7 +650,7 @@ protected:
         }
     }
 
-    void handle_proxy_timeout(init_handler callback, lib::error_code const & ec)
+    void handle_proxy_timeout(init_handler callback, const lib::error_code& ec)
     {
         if (ec == transport::error::operation_aborted) {
             m_alog->write(log::alevel::devel,
@@ -666,7 +668,7 @@ protected:
     }
 
     void handle_proxy_write(init_handler callback,
-        lib::asio::error_code const & ec)
+        const lib::asio::error_code& ec)
     {
         if (m_alog->static_test(log::alevel::devel)) {
             m_alog->write(log::alevel::devel,
@@ -740,7 +742,7 @@ protected:
      * @param bytes_transferred The number of bytes read
      */
     void handle_proxy_read(init_handler callback,
-        lib::asio::error_code const & ec, size_t)
+        const lib::asio::error_code& ec, size_t)
     {
         if (m_alog->static_test(log::alevel::devel)) {
             m_alog->write(log::alevel::devel,
@@ -783,7 +785,7 @@ protected:
                 return;
             }
 
-            m_alog->write(log::alevel::devel,m_proxy_data->res.raw());
+            m_alog->write(log::alevel::devel, utility::to_strview(m_proxy_data->res.raw()));
 
             if (m_proxy_data->res.get_status_code() != http::status_code::ok) {
                 // got an error response back
@@ -868,7 +870,7 @@ protected:
         
     }
 
-    void handle_async_read(read_handler handler, lib::asio::error_code const & ec,
+    void handle_async_read(read_handler handler, const lib::asio::error_code& ec,
         size_t bytes_transferred)
     {
         m_alog->write(log::alevel::devel, "asio con handle_async_read");
@@ -903,8 +905,8 @@ protected:
     }
 
     /// Initiate a potentially asyncronous write of the given buffer
-    void async_write(const char* buf, size_t len, write_handler handler) {
-        m_bufs.push_back(lib::asio::buffer(buf,len));
+    void async_write(std::span<const std::uint8_t> buf, write_handler handler) {
+        m_bufs.push_back(lib::asio::buffer(buf.data(),buf.size()));
 
         if (config::enable_multithreading) {
             lib::asio::async_write(
@@ -936,11 +938,9 @@ protected:
     }
 
     /// Initiate a potentially asyncronous write of the given buffers
-    void async_write(std::vector<buffer> const & bufs, write_handler handler) {
-        std::vector<buffer>::const_iterator it;
-
-        for (it = bufs.begin(); it != bufs.end(); ++it) {
-            m_bufs.push_back(lib::asio::buffer((*it).buf,(*it).len));
+    void async_write(std::span<const std::span<const std::uint8_t>> spans, write_handler handler) {
+        for (auto& span : spans) {
+            m_bufs.push_back(lib::asio::buffer(span.data(), span.size()));
         }
 
         if (config::enable_multithreading) {
@@ -977,7 +977,7 @@ protected:
      * @param ec The status code
      * @param bytes_transferred The number of bytes read
      */
-    void handle_async_write(write_handler handler, lib::asio::error_code const & ec, size_t) {
+    void handle_async_write(write_handler handler, const lib::asio::error_code& ec, size_t) {
         m_bufs.clear();
         lib::error_code tec;
         if (ec) {
@@ -1068,7 +1068,7 @@ protected:
      * @param ec The status code
      */
     void handle_async_shutdown_timeout(timer_ptr, init_handler callback, 
-        lib::error_code const & ec)
+        const lib::error_code& ec)
     {
         lib::error_code ret_ec;
 
@@ -1092,7 +1092,7 @@ protected:
     }
 
     void handle_async_shutdown(timer_ptr shutdown_timer, shutdown_handler
-        callback, lib::asio::error_code const & ec)
+        callback, const lib::asio::error_code& ec)
     {
         if (ec == lib::asio::error::operation_aborted ||
             lib::asio::is_neg(shutdown_timer->expires_from_now()))
@@ -1162,7 +1162,7 @@ private:
 
         request_type req;
         response_type res;
-        std::string write_buf;
+        std::vector<std::uint8_t> write_buf;
         lib::asio::streambuf read_buf;
         long timeout_proxy;
         timer_ptr timer;

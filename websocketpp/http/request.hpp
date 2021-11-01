@@ -84,24 +84,24 @@ public:
     }
 
     /// Returns the full raw request (including the body)
-    std::string raw() const;
+    std::vector<std::uint8_t> raw() const;
     
     /// Returns the raw request headers only (similar to an HTTP HEAD request)
     std::string raw_head() const;
 
     /// Set the HTTP method. Must be a valid HTTP token
-    void set_method(std::string const & method);
+    void set_method(std::string_view method);
 
     /// Return the request method
-    std::string const & get_method() const {
+    std::string_view get_method() const {
         return m_method;
     }
 
     /// Set the HTTP uri. Must be a valid HTTP uri
-    void set_uri(std::string const & uri);
+    void set_uri(const std::string& uri);
 
     /// Return the requested URI
-    std::string const & get_uri() const {
+    std::string_view get_uri() const {
         return m_uri;
     }
 

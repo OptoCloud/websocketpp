@@ -295,7 +295,7 @@ protected:
         m_hdl = hdl;
     }
 
-    void handle_init(init_handler callback,lib::asio::error_code const & ec) {
+    void handle_init(init_handler callback,const lib::asio::error_code& ec) {
         if (ec) {
             m_ec = socket::make_error_code(socket::error::tls_handshake_failed);
         } else {

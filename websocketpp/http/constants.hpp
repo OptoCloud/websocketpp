@@ -53,10 +53,10 @@ namespace http {
     typedef std::vector< std::pair<std::string,attribute_list> > parameter_list;
 
     /// Literal value of the HTTP header delimiter
-    static char const header_delimiter[] = "\r\n";
+    static std::string_view header_delimiter = "\r\n";
 
     /// Literal value of the HTTP header separator
-    static char const header_separator[] = ":";
+    static std::string_view header_separator = ":";
 
     /// Literal value of an empty header
     static std::string const empty_header;
@@ -176,106 +176,107 @@ namespace http {
         };
 
         // TODO: should this be inline?
-        inline std::string get_string(value c) {
+        constexpr std::string_view get_string(value c) {
+            using namespace std::literals;
             switch (c) {
                 case uninitialized:
-                    return "Uninitialized";
+                    return "Uninitialized"sv;
                 case continue_code:
-                    return "Continue";
+                    return "Continue"sv;
                 case switching_protocols:
-                    return "Switching Protocols";
+                    return "Switching Protocols"sv;
                 case ok:
-                    return "OK";
+                    return "OK"sv;
                 case created:
-                    return "Created";
+                    return "Created"sv;
                 case accepted:
-                    return "Accepted";
+                    return "Accepted"sv;
                 case non_authoritative_information:
-                    return "Non Authoritative Information";
+                    return "Non Authoritative Information"sv;
                 case no_content:
-                    return "No Content";
+                    return "No Content"sv;
                 case reset_content:
-                    return "Reset Content";
+                    return "Reset Content"sv;
                 case partial_content:
-                    return "Partial Content";
+                    return "Partial Content"sv;
                 case multiple_choices:
-                    return "Multiple Choices";
+                    return "Multiple Choices"sv;
                 case moved_permanently:
-                    return "Moved Permanently";
+                    return "Moved Permanently"sv;
                 case found:
-                    return "Found";
+                    return "Found"sv;
                 case see_other:
-                    return "See Other";
+                    return "See Other"sv;
                 case not_modified:
-                    return "Not Modified";
+                    return "Not Modified"sv;
                 case use_proxy:
-                    return "Use Proxy";
+                    return "Use Proxy"sv;
                 case temporary_redirect:
-                    return "Temporary Redirect";
+                    return "Temporary Redirect"sv;
                 case bad_request:
-                    return "Bad Request";
+                    return "Bad Request"sv;
                 case unauthorized:
-                    return "Unauthorized";
+                    return "Unauthorized"sv;
                 case payment_required:
-                    return "Payment Required";
+                    return "Payment Required"sv;
                 case forbidden:
-                    return "Forbidden";
+                    return "Forbidden"sv;
                 case not_found:
-                    return "Not Found";
+                    return "Not Found"sv;
                 case method_not_allowed:
-                    return "Method Not Allowed";
+                    return "Method Not Allowed"sv;
                 case not_acceptable:
-                    return "Not Acceptable";
+                    return "Not Acceptable"sv;
                 case proxy_authentication_required:
-                    return "Proxy Authentication Required";
+                    return "Proxy Authentication Required"sv;
                 case request_timeout:
-                    return "Request Timeout";
+                    return "Request Timeout"sv;
                 case conflict:
-                    return "Conflict";
+                    return "Conflict"sv;
                 case gone:
-                    return "Gone";
+                    return "Gone"sv;
                 case length_required:
-                    return "Length Required";
+                    return "Length Required"sv;
                 case precondition_failed:
-                    return "Precondition Failed";
+                    return "Precondition Failed"sv;
                 case request_entity_too_large:
-                    return "Request Entity Too Large";
+                    return "Request Entity Too Large"sv;
                 case request_uri_too_long:
-                    return "Request-URI Too Long";
+                    return "Request-URI Too Long"sv;
                 case unsupported_media_type:
-                    return "Unsupported Media Type";
+                    return "Unsupported Media Type"sv;
                 case request_range_not_satisfiable:
-                    return "Requested Range Not Satisfiable";
+                    return "Requested Range Not Satisfiable"sv;
                 case expectation_failed:
-                    return "Expectation Failed";
+                    return "Expectation Failed"sv;
                 case im_a_teapot:
-                    return "I'm a teapot";
+                    return "I'm a teapot"sv;
                 case upgrade_required:
-                    return "Upgrade Required";
+                    return "Upgrade Required"sv;
                 case precondition_required:
-                    return "Precondition Required";
+                    return "Precondition Required"sv;
                 case too_many_requests:
-                    return "Too Many Requests";
+                    return "Too Many Requests"sv;
                 case request_header_fields_too_large:
-                    return "Request Header Fields Too Large";
+                    return "Request Header Fields Too Large"sv;
                 case internal_server_error:
-                    return "Internal Server Error";
+                    return "Internal Server Error"sv;
                 case not_implemented:
-                    return "Not Implemented";
+                    return "Not Implemented"sv;
                 case bad_gateway:
-                    return "Bad Gateway";
+                    return "Bad Gateway"sv;
                 case service_unavailable:
-                    return "Service Unavailable";
+                    return "Service Unavailable"sv;
                 case gateway_timeout:
-                    return "Gateway Timeout";
+                    return "Gateway Timeout"sv;
                 case http_version_not_supported:
-                    return "HTTP Version Not Supported";
+                    return "HTTP Version Not Supported"sv;
                 case not_extended:
-                    return "Not Extended";
+                    return "Not Extended"sv;
                 case network_authentication_required:
-                    return "Network Authentication Required";
+                    return "Network Authentication Required"sv;
                 default:
-                    return "Unknown";
+                    return "Unknown"sv;
             }
         }
     }

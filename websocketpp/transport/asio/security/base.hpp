@@ -64,7 +64,7 @@ namespace transport {
 namespace asio {
 namespace socket {
 
-typedef lib::function<void(lib::asio::error_code const &)> shutdown_handler;
+typedef lib::function<void(const lib::asio::error_code&)> shutdown_handler;
 
 /**
  * The transport::asio::socket::* classes are a set of security/socket related
@@ -139,7 +139,7 @@ public:
     }
 };
 
-inline lib::error_category const & get_socket_category() {
+inline const lib::error_category& get_socket_category() {
     static socket_category instance;
     return instance;
 }

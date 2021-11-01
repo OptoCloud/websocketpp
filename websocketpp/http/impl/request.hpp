@@ -63,8 +63,8 @@ inline size_t request::consume(char const * buf, size_t len) {
         end = std::search(
             begin,
             m_buf->end(),
-            header_delimiter,
-            header_delimiter+sizeof(header_delimiter)-1
+            header_delimiter.begin(),
+            header_delimiter.end()
         );
         
         m_header_bytes += (end-begin+sizeof(header_delimiter));
@@ -93,8 +93,8 @@ inline size_t request::consume(char const * buf, size_t len) {
             }
 
             bytes_processed = (
-                len - static_cast<std::string::size_type>(m_buf->end()-end)
-                    + sizeof(header_delimiter) - 1
+                len - static_cast<std::string::size_type>(m_buf->end() - end)
+                    + header_delimiter.size()
             );
 
             // frees memory used temporarily during request parsing
@@ -118,24 +118,40 @@ inline size_t request::consume(char const * buf, size_t len) {
             }
         } else {
             if (m_method.empty()) {
-                this->process(begin,end);
+                this->process(begin, end);
             } else {
-                this->process_header(begin,end);
+                this->process_header(begin, end);
             }
         }
 
-        begin = end+(sizeof(header_delimiter)-1);
+        begin = end + header_delimiter.size();
     }
 }
 
-inline std::string request::raw() const {
+inline std::vector<std::uint8_t> request::raw() const {
     // TODO: validation. Make sure all required fields have been set?
-    std::stringstream ret;
 
-    ret << m_method << " " << m_uri << " " << get_version() << "\r\n";
-    ret << raw_headers() << "\r\n" << m_body;
+    std::string_view version = get_version();
+    std::string headers = raw_headers();
 
-    return ret.str();
+    std::vector<std::uint8_t> ret;
+    ret.reserve(
+                m_method.size() + 1 + m_uri.size() + 1 +version.size() + 2 +
+                headers.size() + 2 +
+                m_body.size()
+                );
+
+    ret.insert(ret.end(), m_method.begin(), m_method.end());
+    ret.insert(ret.end(), { ' ' });
+    ret.insert(ret.end(), m_uri.begin(), m_uri.end());
+    ret.insert(ret.end(), { ' ' });
+    ret.insert(ret.end(), version.begin(), version.end());
+    ret.insert(ret.end(), { '\r', '\n' });
+    ret.insert(ret.end(), headers.begin(), headers.end());
+    ret.insert(ret.end(), { '\r', '\n' });
+    ret.insert(ret.end(), m_body.begin(), m_body.end());
+
+    return ret;
 }
 
 inline std::string request::raw_head() const {
@@ -148,15 +164,15 @@ inline std::string request::raw_head() const {
     return ret.str();
 }
 
-inline void request::set_method(std::string const & method) {
-    if (std::find_if(method.begin(),method.end(),is_not_token_char) != method.end()) {
-        throw exception("Invalid method token.",status_code::bad_request);
+inline void request::set_method(std::string_view method) {
+    if (std::find_if(method.begin(), method.end(), is_not_token_char) != method.end()) {
+        throw exception("Invalid method token.", status_code::bad_request);
     }
 
-    m_method = method;
+    m_method.assign(method.begin(), method.end());
 }
 
-inline void request::set_uri(std::string const & uri) {
+inline void request::set_uri(const std::string& uri) {
     // TODO: validation?
     m_uri = uri;
 }

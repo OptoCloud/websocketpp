@@ -229,44 +229,45 @@ namespace status {
      * @param [in] code The code to look up.
      * @return A human readable interpretation of the code.
      */
-    inline std::string get_string(value code) {
+    inline std::string_view get_string(value code) {
+        using namespace std::literals;
         switch (code) {
             case normal:
-                return "Normal close";
+                return "Normal close"sv;
             case going_away:
-                return "Going away";
+                return "Going away"sv;
             case protocol_error:
-                return "Protocol error";
+                return "Protocol error"sv;
             case unsupported_data:
-                return "Unsupported data";
+                return "Unsupported data"sv;
             case no_status:
-                return "No status set";
+                return "No status set"sv;
             case abnormal_close:
-                return "Abnormal close";
+                return "Abnormal close"sv;
             case invalid_payload:
-                return "Invalid payload";
+                return "Invalid payload"sv;
             case policy_violation:
-                return "Policy violoation";
+                return "Policy violoation"sv;
             case message_too_big:
-                return "Message too big";
+                return "Message too big"sv;
             case extension_required:
-                return "Extension required";
+                return "Extension required"sv;
             case internal_endpoint_error:
-                return "Internal endpoint error";
+                return "Internal endpoint error"sv;
             case service_restart:
-                return "Service restart";
+                return "Service restart"sv;
             case try_again_later:
-                return "Try again later";
+                return "Try again later"sv;
             case bad_gateway:
-                return "Bad gateway";
+                return "Bad gateway"sv;
             case tls_handshake:
-                return "TLS handshake failure";
+                return "TLS handshake failure"sv;
             case subprotocol_error:
-                return "Generic subprotocol error";
+                return "Generic subprotocol error"sv;
             case invalid_subprotocol_data:
-                return "Invalid subprotocol data";
+                return "Invalid subprotocol data"sv;
             default:
-                return "Unknown";
+                return "Unknown"sv;
         }
     }
 } // namespace status
@@ -291,7 +292,7 @@ union code_converter {
  * @param [out] ec Set to indicate what error occurred, if any.
  * @return The extracted value
  */
-inline status::value extract_code(std::string const & payload, lib::error_code
+inline status::value extract_code(std::span<const std::uint8_t> payload, lib::error_code
     & ec)
 {
     ec = lib::error_code();
@@ -330,7 +331,7 @@ inline status::value extract_code(std::string const & payload, lib::error_code
  * @param [out] ec Set to indicate what error occurred, if any.
  * @return The reason string.
  */
-inline std::string extract_reason(std::string const & payload, lib::error_code
+inline std::string extract_reason(std::span<const std::uint8_t> payload, lib::error_code
     & ec)
 {
     std::string reason;

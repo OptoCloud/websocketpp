@@ -114,19 +114,19 @@ namespace websocketpp {
 namespace transport {
 
 /// The type and signature of the callback passed to the init hook
-typedef lib::function<void(lib::error_code const &)> init_handler;
+typedef lib::function<void(const lib::error_code&)> init_handler;
 
 /// The type and signature of the callback passed to the read method
-typedef lib::function<void(lib::error_code const &,size_t)> read_handler;
+typedef lib::function<void(const lib::error_code&,size_t)> read_handler;
 
 /// The type and signature of the callback passed to the write method
-typedef lib::function<void(lib::error_code const &)> write_handler;
+typedef lib::function<void(const lib::error_code&)> write_handler;
 
 /// The type and signature of the callback passed to the read method
-typedef lib::function<void(lib::error_code const &)> timer_handler;
+typedef lib::function<void(const lib::error_code&)> timer_handler;
 
 /// The type and signature of the callback passed to the shutdown method
-typedef lib::function<void(lib::error_code const &)> shutdown_handler;
+typedef lib::function<void(const lib::error_code&)> shutdown_handler;
 
 /// The type and signature of the callback passed to the interrupt method
 typedef lib::function<void()> interrupt_handler;
@@ -136,9 +136,9 @@ typedef lib::function<void()> dispatch_handler;
 
 /// A simple utility buffer class
 struct buffer {
-    buffer(char const * b, size_t l) : buf(b),len(l) {}
+    buffer(const std::byte* b, size_t l) : buf(b),len(l) {}
 
-    char const * buf;
+    const std::byte* buf;
     size_t len;
 };
 
@@ -216,7 +216,7 @@ class category : public lib::error_category {
     }
 };
 
-inline lib::error_category const & get_category() {
+inline const lib::error_category& get_category() {
     static category instance;
     return instance;
 }

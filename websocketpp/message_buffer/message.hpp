@@ -31,7 +31,10 @@
 #include <websocketpp/common/memory.hpp>
 #include <websocketpp/frame.hpp>
 
+#include <span>
+#include <vector>
 #include <string>
+#include <string_view>
 
 namespace websocketpp {
 namespace message_buffer {
@@ -221,7 +224,7 @@ public:
      * This value is typically set by a websocket protocol processor
      * and shouldn't be tampered with.
      */
-    std::string const & get_header() const {
+    std::span<const std::uint8_t> get_header() const {
         return m_header;
     }
 
@@ -231,11 +234,11 @@ public:
      *
      * @param header A string to set the header to.
      */
-    void set_header(std::string const & header) {
-        m_header = header;
+    void set_header(std::span<const std::uint8_t> header) {
+        m_header.assign(header.begin(), header.end());
     }
 
-    std::string const & get_extension_data() const {
+    std::span<const std::uint8_t> get_extension_data() const {
         return m_extension_data;
     }
 
@@ -243,7 +246,7 @@ public:
     /**
      * @return A const reference to the message's payload string
      */
-    std::string const & get_payload() const {
+    std::span<const std::uint8_t> get_payload() const {
         return m_payload;
     }
 
@@ -251,7 +254,7 @@ public:
     /**
      * @return A reference to the message's payload string
      */
-    std::string & get_raw_payload() {
+    std::vector<std::uint8_t>& get_raw_payload() {
         return m_payload;
     }
 
@@ -261,8 +264,8 @@ public:
      *
      * @param payload A string to set the payload to.
      */
-    void set_payload(std::string const & payload) {
-        m_payload = payload;
+    void set_payload(std::string_view payload) {
+        m_payload.assign(payload.begin(), payload.end());
     }
 
     /// Set payload data
@@ -272,10 +275,8 @@ public:
      * @param payload A pointer to a data array to set to.
      * @param len The length of new payload in bytes.
      */
-    void set_payload(void const * payload, size_t len) {
-        m_payload.reserve(len);
-        char const * pl = static_cast<char const *>(payload);
-        m_payload.assign(pl, pl + len);
+    void set_payload(std::span<const std::uint8_t> payload) {
+        m_payload.assign(payload.begin(), payload.end());
     }
 
     /// Append payload data
@@ -284,8 +285,8 @@ public:
      *
      * @param payload A string containing the data array to append.
      */
-    void append_payload(std::string const & payload) {
-        m_payload.append(payload);
+    void append_payload(std::string_view payload) {
+        m_payload.insert(m_payload.end(), payload.begin(), payload.end());
     }
 
     /// Append payload data
@@ -295,9 +296,8 @@ public:
      * @param payload A pointer to a data array to append
      * @param len The length of payload in bytes
      */
-    void append_payload(void const * payload, size_t len) {
-        m_payload.reserve(m_payload.size()+len);
-        m_payload.append(static_cast<char const *>(payload),len);
+    void append_payload(std::span<const std::uint8_t> payload) {
+        m_payload.insert(m_payload.end(), payload.begin(), payload.end());
     }
 
     /// Recycle the message
@@ -324,9 +324,9 @@ public:
     }
 private:
     con_msg_man_weak_ptr        m_manager;
-    std::string                 m_header;
-    std::string                 m_extension_data;
-    std::string                 m_payload;
+    std::vector<std::uint8_t>      m_header;
+    std::vector<std::uint8_t>      m_extension_data;
+    std::vector<std::uint8_t>      m_payload;
     frame::opcode::value        m_opcode;
     bool                        m_prepared;
     bool                        m_fin;

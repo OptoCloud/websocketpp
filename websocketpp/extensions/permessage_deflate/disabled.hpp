@@ -36,6 +36,7 @@
 #include <websocketpp/extensions/extension.hpp>
 
 #include <map>
+#include <span>
 #include <string>
 #include <utility>
 
@@ -103,21 +104,20 @@ public:
     /// Compress bytes
     /**
      * @param [in] in String to compress
-     * @param [out] out String to append compressed bytes to
+     * @param [out] out Vector to append compressed bytes to
      * @return Error or status code
      */
-    lib::error_code compress(std::string const &, std::string &) {
+    lib::error_code compress(std::string_view, std::vector<std::uint8_t>&) {
         return make_error_code(error::disabled);
     }
 
     /// Decompress bytes
     /**
-     * @param buf Byte buffer to decompress
-     * @param len Length of buf
-     * @param out String to append decompressed bytes to
+     * @param buf Byte span to decompress
+     * @param out Vector to append decompressed bytes to
      * @return Error or status code
      */
-    lib::error_code decompress(uint8_t const *, size_t, std::string &) {
+    lib::error_code decompress(std::span<const std::uint8_t>, std::vector<std::uint8_t>&) {
         return make_error_code(error::disabled);
     }
 };

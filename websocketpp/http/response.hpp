@@ -123,7 +123,7 @@ public:
     }
 
     /// Returns the full raw response
-    std::string raw() const;
+    std::vector<std::uint8_t> raw() const;
 
     /// Set response status code and message
     /**
@@ -146,7 +146,7 @@ public:
      * @param code Code to set
      * @param msg Message to set
      */
-    void set_status(status_code::value code, std::string const & msg);
+    void set_status(status_code::value code, std::string_view msg);
 
     /// Return the response status code
     status_code::value get_status_code() const {
@@ -154,7 +154,7 @@ public:
     }
 
     /// Return the response status message
-    const std::string& get_status_msg() const {
+    std::string_view get_status_msg() const {
         return m_status_msg;
     }
 private:

@@ -434,7 +434,7 @@ public:
         m_thread.reset(new websocketpp::lib::thread(&client::run, &m_endpoint));
     }
 
-    int connect(std::string const & uri) {
+    int connect(const std::string& uri) {
         websocketpp::lib::error_code ec;
 
         client::connection_ptr con = m_endpoint.get_connection(uri, ec);
@@ -680,7 +680,7 @@ Messages are sent using `endpoint::send`. This is a thread safe method that may 
 
 Each method takes a `connection_hdl` to indicate which connection to send the message on as well as a `frame::opcode::value` to indicate which opcode to label the message as. All overloads are also available with an exception free varient that fills in a a status/error code instead of throwing.
 
-The first overload, `connection_hdl hdl, std::string const & payload, frame::opcode::value op`, takes a `std::string`. The string contents are copied into an internal buffer and can be safely modified after calling send.
+The first overload, `connection_hdl hdl, const std::string& payload, frame::opcode::value op`, takes a `std::string`. The string contents are copied into an internal buffer and can be safely modified after calling send.
 
 The second overload, `connection_hdl hdl, void const * payload, size_t len, frame::opcode::value op`, takes a void * buffer and length. The buffer contents are copied and can be safely modified after calling send.
 

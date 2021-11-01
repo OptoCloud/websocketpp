@@ -200,7 +200,7 @@ public:
     }
     
     // debug stuff to invoke the async handlers
-    void expire_timer(lib::error_code const & ec) {
+    void expire_timer(const lib::error_code& ec) {
         m_timer_handler(ec);
     }
     
@@ -373,7 +373,7 @@ protected:
      *
      * @param ec The error code to forward to the read handler
      */
-    void complete_read(lib::error_code const & ec) {
+    void complete_read(const lib::error_code& ec) {
         m_reading = false;
 
         read_handler handler = m_read_handler;

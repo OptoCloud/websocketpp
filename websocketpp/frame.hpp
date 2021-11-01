@@ -29,7 +29,7 @@
 #define WEBSOCKETPP_FRAME_HPP
 
 #include <algorithm>
-#include <string>
+#include <vector>
 
 #include <websocketpp/common/system_error.hpp>
 #include <websocketpp/common/network.hpp>
@@ -53,20 +53,20 @@ static unsigned int const MAX_EXTENDED_HEADER_LENGTH = 12;
 
 /// Two byte conversion union
 union uint16_converter {
-    uint16_t i;
-    uint8_t  c[2];
+    std::uint16_t i;
+    std::uint8_t     c[2];
 };
 
 /// Four byte conversion union
 union uint32_converter {
-    uint32_t i;
-    uint8_t c[4];
+    std::uint32_t i;
+    std::uint8_t     c[4];
 };
 
 /// Eight byte conversion union
 union uint64_converter {
-    uint64_t i;
-    uint8_t  c[8];
+    std::uint64_t i;
+    std::uint8_t     c[8];
 };
 
 /// Constants and utility functions related to WebSocket opcodes
@@ -227,24 +227,24 @@ struct basic_header {
         b1 |= basic_value;
     }
 
-    uint8_t b0;
-    uint8_t b1;
+    std::uint8_t b0;
+    std::uint8_t b1;
 };
 
 /// The variable size component of a WebSocket frame header
 struct extended_header {
     extended_header() {
-        std::fill_n(this->bytes,MAX_EXTENDED_HEADER_LENGTH,0x00);
+        std::fill(bytes.begin(), bytes.end(), 0x00);
     }
 
     extended_header(uint64_t payload_size) {
-        std::fill_n(this->bytes,MAX_EXTENDED_HEADER_LENGTH,0x00);
+        std::fill(bytes.begin(), bytes.end(), 0x00);
 
         copy_payload(payload_size);
     }
 
     extended_header(uint64_t payload_size, uint32_t masking_key) {
-        std::fill_n(this->bytes,MAX_EXTENDED_HEADER_LENGTH,0x00);
+        std::fill(bytes.begin(), bytes.end(), 0x00);
 
         // Copy payload size
         int offset = copy_payload(payload_size);
@@ -252,10 +252,10 @@ struct extended_header {
         // Copy Masking Key
         uint32_converter temp32;
         temp32.i = masking_key;
-        std::copy(temp32.c,temp32.c+4,bytes+offset);
+        std::copy(temp32.c, temp32.c + 4, bytes.begin() + offset);
     }
 
-    uint8_t bytes[MAX_EXTENDED_HEADER_LENGTH];
+    std::array<std::uint8_t, MAX_EXTENDED_HEADER_LENGTH> bytes;
 private:
     int copy_payload(uint64_t payload_size) {
         int payload_offset = 0;
@@ -268,7 +268,7 @@ private:
 
         uint64_converter temp64;
         temp64.i = lib::net::_htonll(payload_size);
-        std::copy(temp64.c+payload_offset,temp64.c+8,bytes);
+        std::copy(temp64.c + payload_offset, temp64.c + 8, bytes.begin());
 
         return 8-payload_offset;
     }
@@ -289,7 +289,7 @@ uint8_t get_basic_size(basic_header const &);
 size_t get_header_len(basic_header const &);
 unsigned int get_masking_key_offset(basic_header const &);
 
-std::string write_header(basic_header const &, extended_header const &);
+std::vector<std::uint8_t> write_header(basic_header const &, extended_header const &);
 masking_key_type get_masking_key(basic_header const &, extended_header const &);
 uint16_t get_extended_size(extended_header const &);
 uint64_t get_jumbo_size(extended_header const &);
@@ -486,16 +486,17 @@ inline unsigned int get_masking_key_offset(const basic_header &h) {
  *
  * @return A contiguous string containing h and e
  */
-inline std::string prepare_header(const basic_header &h, const
+inline std::vector<std::uint8_t> prepare_header(const basic_header &h, const
     extended_header &e)
 {
-    std::string ret;
+    std::vector<std::uint8_t> ret;
 
-    ret.push_back(char(h.b0));
-    ret.push_back(char(h.b1));
-    ret.append(
-        reinterpret_cast<const char*>(e.bytes),
-        get_header_len(h)-BASIC_HEADER_LENGTH
+    ret.push_back(std::uint8_t(h.b0));
+    ret.push_back(std::uint8_t(h.b1));
+    ret.insert(
+        ret.end(),
+        e.bytes.begin(),
+        e.bytes.begin() + get_header_len(h) - BASIC_HEADER_LENGTH
     );
 
     return ret;
@@ -522,7 +523,7 @@ inline masking_key_type get_masking_key(const basic_header &h, const
         temp32.i = 0;
     } else {
         unsigned int offset = get_masking_key_offset(h);
-        std::copy(e.bytes+offset,e.bytes+offset+4,temp32.c);
+        std::copy(e.bytes.begin() + offset, e.bytes.begin() + offset + 4, temp32.c);
     }
 
     return temp32;
@@ -539,7 +540,7 @@ inline masking_key_type get_masking_key(const basic_header &h, const
  */
 inline uint16_t get_extended_size(const extended_header &e) {
     uint16_converter temp16;
-    std::copy(e.bytes,e.bytes+2,temp16.c);
+    std::copy(e.bytes.begin(), e.bytes.begin() + 2, temp16.c);
     return ntohs(temp16.i);
 }
 
@@ -554,7 +555,7 @@ inline uint16_t get_extended_size(const extended_header &e) {
  */
 inline uint64_t get_jumbo_size(const extended_header &e) {
     uint64_converter temp64;
-    std::copy(e.bytes,e.bytes+8,temp64.c);
+    std::copy(e.bytes.begin(), e.bytes.begin() + 8, temp64.c);
     return lib::net::_ntohll(temp64.i);
 }
 
@@ -699,7 +700,7 @@ void byte_mask(iter_type b, iter_type e, masking_key_type const & key,
  *
  * @param key Masking key to use
  */
-inline void word_mask_exact(uint8_t* input, uint8_t* output, size_t length,
+inline void word_mask_exact(std::uint8_t* input, std::uint8_t* output, std::size_t length,
     const masking_key_type& key)
 {
     size_t prepared_key = prepare_masking_key(key);
@@ -728,10 +729,10 @@ inline void word_mask_exact(uint8_t* input, uint8_t* output, size_t length,
  *
  * @param key Masking key to use
  */
-inline void word_mask_exact(uint8_t* data, size_t length, const
+inline void word_mask_exact(std::span<std::uint8_t> data, const
     masking_key_type& key)
 {
-    word_mask_exact(data,data,length,key);
+    word_mask_exact(data.data(),data.data(),data.size(),key);
 }
 
 /// Circular word aligned mask/unmask
@@ -802,8 +803,8 @@ inline size_t word_mask_circ(uint8_t * input, uint8_t * output, size_t length,
  *
  * @return the prepared_key shifted to account for the input length
  */
-inline size_t word_mask_circ(uint8_t* data, size_t length, size_t prepared_key){
-    return word_mask_circ(data,data,length,prepared_key);
+inline size_t word_mask_circ(std::span<std::uint8_t> data, size_t prepared_key){
+    return word_mask_circ(data.data(), data.data(), data.size(), prepared_key);
 }
 
 /// Circular byte aligned mask/unmask
@@ -827,7 +828,7 @@ inline size_t word_mask_circ(uint8_t* data, size_t length, size_t prepared_key){
  *
  * @return the prepared_key shifted to account for the input length
  */
-inline size_t byte_mask_circ(uint8_t * input, uint8_t * output, size_t length,
+inline size_t byte_mask_circ(std::uint8_t* input, std::uint8_t* output, size_t length,
     size_t prepared_key)
 {
     uint32_converter key;
@@ -854,8 +855,8 @@ inline size_t byte_mask_circ(uint8_t * input, uint8_t * output, size_t length,
  *
  * @return the prepared_key shifted to account for the input length
  */
-inline size_t byte_mask_circ(uint8_t* data, size_t length, size_t prepared_key){
-    return byte_mask_circ(data,data,length,prepared_key);
+inline size_t byte_mask_circ(std::span<std::uint8_t> data, size_t prepared_key){
+    return byte_mask_circ(data.data(), data.data(), data.size() ,prepared_key);
 }
 
 } // namespace frame

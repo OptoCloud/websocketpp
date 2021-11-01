@@ -17,11 +17,10 @@ bool validate(server & s, connection_hdl hdl) {
 
     std::cout << "Cache-Control: " << con->get_request_header("Cache-Control") << std::endl;
 
-    const std::vector<std::string> & subp_requests = con->get_requested_subprotocols();
-    std::vector<std::string>::const_iterator it;
+    std::span<const std::string> subp_requests = con->get_requested_subprotocols();
 
-    for (it = subp_requests.begin(); it != subp_requests.end(); ++it) {
-        std::cout << "Requested: " << *it << std::endl;
+    for (const auto& req : subp_requests) {
+        std::cout << "Requested: " << req << std::endl;
     }
 
     if (subp_requests.size() > 0) {

@@ -38,11 +38,11 @@ namespace websocketpp {
 namespace http {
 namespace parser {
 
-inline void parser::set_version(std::string const & version) {
-    m_version = version;
+inline void parser::set_version(std::string_view version) {
+    m_version.assign(version.begin(), version.end());
 }
 
-inline std::string const & parser::get_header(std::string const & key) const {
+inline std::string_view parser::get_header(const std::string& key) const {
     header_list::const_iterator h = m_headers.find(key);
 
     if (h == m_headers.end()) {
@@ -52,8 +52,7 @@ inline std::string const & parser::get_header(std::string const & key) const {
     }
 }
 
-inline bool parser::get_header_as_plist(std::string const & key,
-    parameter_list & out) const
+inline bool parser::get_header_as_plist(const std::string& key, parameter_list& out) const
 {
     header_list::const_iterator it = m_headers.find(key);
 
@@ -64,31 +63,31 @@ inline bool parser::get_header_as_plist(std::string const & key,
     return this->parse_parameter_list(it->second,out);
 }
 
-inline void parser::append_header(std::string const & key, std::string const &
-    val)
+inline void parser::append_header(const std::string& key, const std::string& val)
 {
     if (std::find_if(key.begin(),key.end(),is_not_token_char) != key.end()) {
         throw exception("Invalid header name",status_code::bad_request);
     }
 
-    if (this->get_header(key).empty()) {
-        m_headers[key] = val;
+    std::pair<header_list::iterator, bool> ins = m_headers.insert(std::pair<std::string, std::string>(key, val));
+
+    if (ins.first->second.empty() || ins.second) {
+        ins.first->second = val;
     } else {
-        m_headers[key] += ", " + val;
+        ins.first->second += ", " + val;
     }
 }
 
-inline void parser::replace_header(std::string const & key, std::string const &
-    val)
+inline void parser::replace_header(const std::string& key, const std::string& val)
 {
     m_headers[key] = val;
 }
 
-inline void parser::remove_header(std::string const & key) {
+inline void parser::remove_header(const std::string& key) {
     m_headers.erase(key);
 }
 
-inline void parser::set_body(std::string const & value) {
+inline void parser::set_body(std::span<const std::uint8_t> value) {
     if (value.size() == 0) {
         remove_header("Content-Length");
         m_body.clear();
@@ -98,33 +97,29 @@ inline void parser::set_body(std::string const & value) {
     // TODO: should this method respect the max size? If so how should errors
     // be indicated?
 
-    std::stringstream len;
-    len << value.size();
-    replace_header("Content-Length", len.str());
-    m_body = value;
+    replace_header("Content-Length", std::to_string(value.size()));
+    m_body.assign(value.begin(), value.end());
 }
 
-inline bool parser::parse_parameter_list(std::string const & in,
-    parameter_list & out) const
+inline bool parser::parse_parameter_list(std::string_view in, parameter_list& out) const
 {
     if (in.size() == 0) {
         return false;
     }
 
-    std::string::const_iterator it;
-    it = extract_parameters(in.begin(),in.end(),out);
+    std::string_view::const_iterator it = extract_parameters(in.begin(), in.end(), out);
     return (it == in.begin());
 }
 
 inline bool parser::prepare_body() {
     if (!get_header("Content-Length").empty()) {
-        std::string const & cl_header = get_header("Content-Length");
-        char * end;
+        std::string_view cl_header = get_header("Content-Length");
+        char* end;
         
         // TODO: not 100% sure what the compatibility of this method is. Also,
         // I believe this will only work up to 32bit sizes. Is there a need for
         // > 4GiB HTTP payloads?
-        m_body_bytes_needed = std::strtoul(cl_header.c_str(),&end,10);
+        m_body_bytes_needed = std::strtoul(cl_header.data(), &end, 10);
         
         if (m_body_bytes_needed > m_body_bytes_max) {
             throw exception("HTTP message body too large",
@@ -142,10 +137,10 @@ inline bool parser::prepare_body() {
     }
 }
 
-inline size_t parser::process_body(char const * buf, size_t len) {
+inline size_t parser::process_body(const char* buf, size_t len) {
     if (m_body_encoding == body_encoding::plain) {
         size_t processed = (std::min)(m_body_bytes_needed,len);
-        m_body.append(buf,processed);
+        m_body.insert(m_body.end(), buf, buf + processed);
         m_body_bytes_needed -= processed;
         return processed;
     } else if (m_body_encoding == body_encoding::chunked) {
@@ -164,8 +159,8 @@ inline void parser::process_header(std::string::iterator begin,
     std::string::iterator cursor = std::search(
         begin,
         end,
-        header_separator,
-        header_separator + sizeof(header_separator) - 1
+        header_separator.begin(),
+        header_separator.end()
     );
 
     if (cursor == end) {
@@ -173,7 +168,7 @@ inline void parser::process_header(std::string::iterator begin,
     }
 
     append_header(strip_lws(std::string(begin,cursor)),
-                  strip_lws(std::string(cursor+sizeof(header_separator)-1,end)));
+                  strip_lws(std::string(cursor + header_separator.size(), end)));
 }
 
 inline header_list const & parser::get_headers() const {

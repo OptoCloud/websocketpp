@@ -37,6 +37,7 @@
 
 #include <string>
 #include <vector>
+#include <span>
 
 namespace websocketpp {
 namespace transport {
@@ -44,8 +45,7 @@ namespace transport {
 namespace iostream {
 
 /// The type and signature of the callback used by iostream transport to write
-typedef lib::function<lib::error_code(connection_hdl, char const *, size_t)>
-    write_handler;
+typedef lib::function<lib::error_code(connection_hdl, const std::uint8_t*, size_t)> write_handler;
 
 /// The type and signature of the callback used by iostream transport to perform
 /// vectored writes.
@@ -53,8 +53,7 @@ typedef lib::function<lib::error_code(connection_hdl, char const *, size_t)>
  * If a vectored write handler is not set the standard write handler will be
  * called multiple times.
  */
-typedef lib::function<lib::error_code(connection_hdl, std::vector<transport::buffer> const
-    & bufs)> vector_write_handler;
+typedef lib::function<lib::error_code(connection_hdl, std::span<const std::span<const std::uint8_t>> spans)> vector_write_handler;
 
 /// The type and signature of the callback used by iostream transport to signal
 /// a transport shutdown.
@@ -109,7 +108,7 @@ class category : public lib::error_category {
 };
 
 /// Get a reference to a static copy of the iostream transport error category
-inline lib::error_category const & get_category() {
+inline const lib::error_category& get_category() {
     static category instance;
     return instance;
 }

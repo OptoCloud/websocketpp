@@ -116,7 +116,7 @@ public:
      *
      * @return A connection_ptr to the new connection
      */
-    connection_ptr get_connection(std::string const & u, lib::error_code & ec) {
+    connection_ptr get_connection(const std::string& u, lib::error_code & ec) {
         uri_ptr location = lib::make_shared<uri>(u);
 
         if (!location->get_valid()) {
@@ -153,7 +153,7 @@ public:
     }
 private:
     // handle_connect
-    void handle_connect(connection_ptr con, lib::error_code const & ec) {
+    void handle_connect(connection_ptr con, const lib::error_code& ec) {
         if (ec) {
             con->terminate(ec);
 

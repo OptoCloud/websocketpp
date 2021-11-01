@@ -31,7 +31,7 @@
 #include <websocketpp/common/system_error.hpp>
 #include <websocketpp/common/cpp11.hpp>
 
-#include <string>
+#include <string_view>
 
 namespace websocketpp {
 namespace transport {
@@ -54,24 +54,26 @@ class category : public lib::error_category {
     public:
     category() {}
 
-    char const * name() const _WEBSOCKETPP_NOEXCEPT_TOKEN_ {
-        return "websocketpp.transport.stub";
+    std::string_view name() const _WEBSOCKETPP_NOEXCEPT_TOKEN_ {
+        using namespace std::literals;
+        return "websocketpp.transport.stub"sv;
     }
 
-    std::string message(int value) const {
+    std::string_view message(int value) const {
+        using namespace std::literals;
         switch(value) {
             case general:
-                return "Generic stub transport policy error";
+                return "Generic stub transport policy error"sv;
             case not_implemented:
-                return "feature not implemented";
+                return "feature not implemented"sv;
             default:
-                return "Unknown";
+                return "Unknown"sv;
         }
     }
 };
 
 /// Get a reference to a static copy of the stub transport error category
-inline lib::error_category const & get_category() {
+inline const lib::error_category& get_category() {
     static category instance;
     return instance;
 }

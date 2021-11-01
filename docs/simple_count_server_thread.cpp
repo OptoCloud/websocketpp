@@ -38,8 +38,8 @@ public:
             ss << m_count;
             
             std::lock_guard<std::mutex> lock(m_mutex);    
-            for (auto it : m_connections) {
-                m_server.send(it,ss.str(),websocketpp::frame::opcode::text);
+            for (auto connection : m_connections) {
+                m_server.send(connection,ss.str(),websocketpp::frame::opcode::text);
             }
         }
     }

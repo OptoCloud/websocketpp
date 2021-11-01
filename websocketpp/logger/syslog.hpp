@@ -69,7 +69,7 @@ public:
      * @param channel The channel to write to
      * @param msg The message to write
      */
-    void write(level channel, std::string const & msg) {
+    void write(level channel, const std::string& msg) {
         write(channel, msg.c_str());
     }
 
